@@ -34,7 +34,7 @@ Mayam Server follows the **DICOM Standard 2026a** (XML edition) and leverages th
 - **Modality Worklist (MWL) SCP** — Provide scheduled procedure information to modalities.
 - **Modality Performed Procedure Step (MPPS) SCP** — Track procedure progress in real time.
 - **DICOM Print Management SCP** — Film-based and virtual print support.
-- **Instance Availability Notification** — Notify downstream systems when studies are available.
+- **Instance Availability Notification (IAN)** — Notify downstream systems (including RIS) when studies are available; exposed as both a DICOM service and a RESTful API for easy integration.
 - **Multiple Transfer Syntax Support** — Including Implicit/Explicit VR Little/Big Endian, JPEG, JPEG 2000, JPEG-LS, JPEG XL, RLE, and Deflated Explicit VR.
 
 ### DICOMweb Services
@@ -52,8 +52,54 @@ Mayam Server follows the **DICOM Standard 2026a** (XML edition) and leverages th
 - **Hierarchical Storage Management (HSM)** — Automatic data lifecycle policies (hot → warm → cold).
 - **Backup & Disaster Recovery** — Scheduled and on-demand backups; support for local, network, and cloud backup targets; point-in-time recovery.
 - **Storage Commitment Verification** — End-to-end integrity checks on archived data.
-- **Lossless & Lossy Transcoding** — On-the-fly or background transcoding between transfer syntaxes.
+- **Study-Level Archive Packaging** — ZIP (and optionally TAR+Zstd) packaging of studies for efficient bulk transfer, backup, and near-line storage.
+- **Store-As-Received** — Studies received in a compressed transfer syntax are stored in their original compressed form; no unnecessary decompression on ingest.
+- **Serve-As-Stored** — When a client supports the stored transfer syntax, serve the original compressed data directly without transcoding; decompress or transcode only when the requesting client does not support the stored format.
+- **Compressed Copy on Receipt** — Optional server-side policy to create an additional compressed copy (e.g., JPEG 2000, JPEG-LS) of each study at ingest time, supporting tele-radiology and bandwidth-constrained retrieval scenarios.
+- **Unified Object Presentation** — Original and compressed copies of the same study are presented as a single logical item to end users; the PACS automatically serves whichever representation is most appropriate for the requesting client.
+- **Lossless & Lossy Transcoding** — On-the-fly or background transcoding between transfer syntaxes, triggered only when needed.
 - **De-Duplication** — Content-addressable detection of duplicate SOP instances.
+
+#### Storage Policy Matrix
+
+Configurable rules govern data handling at each lifecycle stage:
+
+| Stage | Applicable Policies |
+|---|---|
+| **Ingest** | Store-as-received; optional compressed-copy creation; duplicate detection; integrity checksum; study-level ZIP/TAR+Zstd packaging; per-modality codec selection |
+| **Online** | Serve-as-stored; on-demand transcoding for unsupported clients; QoS priority for STAT studies |
+| **Near-Line** | Policy-driven migration triggers (age, last-access, modality, study status); archive packaging format (ZIP / TAR+Zstd); retention rules |
+| **Offline** | Tape / cold object-storage tier; minimum retention periods; deletion protection for legal-hold studies |
+| **Rehydrate** | On-demand recall to online tier; prefetch hints from query patterns; automatic cache eviction after configurable TTL |
+
+#### Representation Model
+
+The server manages multiple derivative representations of each study, presented to end users as a single logical item:
+
+| Dimension | Representation Rules |
+|---|---|
+| **Per Modality** | Default archive codec per modality type (e.g., JPEG-LS lossless for CR/DX, JPEG 2000 for CT/MR, uncompressed for US). Configurable per-modality ingest and compressed-copy policies. |
+| **Per Site** | Site-level storage profiles defining which representations to create and retain (e.g., a main site keeps originals + lossless, a satellite site keeps lossy only). |
+| **Per Tele-Radiology Destination** | Destination-specific compressed copies pre-built at ingest or on first request; codec, quality, and resolution rules per remote reading site. Bandwidth-aware selection. |
+| **Derivative Limit** | Configurable maximum number of representations per study (e.g., original + 2 compressed copies). Oldest/least-used derivatives can be pruned by policy. |
+
+#### RIS Event Catalog (IAN + Webhooks)
+
+Mayam Server publishes lifecycle events via DICOM Instance Availability Notification and equivalent RESTful webhooks. The following event catalog defines each event type and its payload:
+
+| Event | Trigger | Key Payload Fields |
+|---|---|---|
+| `study.received` | First instance of a new study is stored | `studyInstanceUID`, `accessionNumber`, `patientID`, `patientName`, `modality`, `studyDate`, `studyDescription`, `receivingAE`, `sourceAE`, `timestamp` |
+| `study.updated` | Additional instances arrive for an existing study | `studyInstanceUID`, `accessionNumber`, `seriesCount`, `instanceCount`, `latestSeriesUID`, `sourceAE`, `timestamp` |
+| `study.complete` | Study completeness criteria met (configurable timer / instance count / MPPS completed) | `studyInstanceUID`, `accessionNumber`, `patientID`, `modality`, `seriesCount`, `instanceCount`, `studyStatus`, `timestamp` |
+| `study.available` | Study is available for retrieval (IAN equivalent) | `studyInstanceUID`, `accessionNumber`, `patientID`, `retrieveAE`, `retrieveURL` (DICOMweb), `availableTransferSyntaxes[]`, `timestamp` |
+| `study.routed` | Study has been forwarded to a destination node | `studyInstanceUID`, `accessionNumber`, `destinationAE`, `destinationURL`, `transferSyntaxUsed`, `routeRuleID`, `timestamp` |
+| `study.archived` | Study migrated to near-line / offline tier | `studyInstanceUID`, `accessionNumber`, `storageTier`, `archiveFormat`, `archivePath`, `timestamp` |
+| `study.rehydrated` | Study recalled from near-line / offline to online | `studyInstanceUID`, `accessionNumber`, `previousTier`, `currentTier`, `recallDuration`, `timestamp` |
+| `study.deleted` | Study permanently removed from all tiers | `studyInstanceUID`, `accessionNumber`, `patientID`, `deletionReason`, `deletedBy`, `timestamp` |
+| `study.error` | An error occurred during processing | `studyInstanceUID`, `accessionNumber`, `errorCode`, `errorMessage`, `stage` (ingest/route/archive/rehydrate), `timestamp` |
+
+**Webhook delivery:** JSON payloads over HTTPS POST with HMAC-SHA256 signature verification; configurable retry with exponential back-off; subscription management via the Admin API.
 
 ### Image Compression
 
@@ -71,6 +117,7 @@ Leveraging Raster-Lab's native Swift codecs for best-in-class performance on App
 - **HL7 v2.x Messaging** — ADT, ORM, ORU message processing via [HL7kit](https://github.com/Raster-Lab/HL7kit).
 - **HL7 FHIR R4** — ImagingStudy, Patient, DiagnosticReport resource support.
 - **MLLP Transport** — Standard Minimal Lower Layer Protocol with TLS.
+- **IAN-Style REST APIs for RIS Integration** — RESTful endpoints mirroring Instance Availability Notification semantics, enabling RIS and other non-DICOM systems to subscribe to study-available, study-updated, and study-archived events via webhooks or polling.
 - **IHE Profile Support** — Targets key IHE Radiology profiles:
   - Scheduled Workflow (SWF)
   - Patient Information Reconciliation (PIR)

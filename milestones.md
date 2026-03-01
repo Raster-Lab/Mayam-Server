@@ -39,14 +39,23 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
 
 ## Milestone 3 — Storage Service (C-STORE SCP/SCU)
 
-**Goal:** Receive, validate, and persistently archive DICOM objects.
+**Goal:** Receive, validate, and persistently archive DICOM objects with intelligent compression handling.
 
 - Implement **C-STORE SCP** — receive DICOM objects from modalities and workstations.
 - Design the on-disk storage layout (configurable directory hierarchy by Patient/Study/Series).
 - Implement the metadata index database (SQLite for single-node; abstraction layer for future PostgreSQL).
 - Store received objects with SHA-256 integrity checksums.
+- **Store-As-Received** — preserve the original transfer syntax of incoming objects; do not decompress compressed data on ingest.
 - Support core Transfer Syntaxes: Implicit VR Little Endian, Explicit VR Little/Big Endian, Deflated Explicit VR, RLE.
 - Implement **C-STORE SCU** — send/forward DICOM objects to remote DICOM nodes.
+- **Serve-As-Stored** — when a requesting client accepts the stored transfer syntax, serve the original compressed data directly without transcoding; decompress or transcode only when the client does not support the stored format.
+- Implement **Study-Level Archive Packaging** — ZIP (and optionally TAR+Zstd) packaging of complete studies for efficient backup, near-line storage, and bulk transfer.
+- Define and implement the **Storage Policy Matrix** — configurable rules governing data handling at each lifecycle stage:
+  - **Ingest** — store-as-received; optional compressed-copy creation; duplicate detection; integrity checksum; per-modality codec selection.
+  - **Online** — serve-as-stored; on-demand transcoding for unsupported clients; QoS priority for STAT studies.
+  - **Near-Line** — policy-driven migration triggers (age, last-access, modality, study status); archive packaging format (ZIP / TAR+Zstd); retention rules.
+  - **Offline** — cold object-storage / tape tier; minimum retention periods; deletion protection for legal-hold studies.
+  - **Rehydrate** — on-demand recall to online tier; prefetch hints from query patterns; automatic cache eviction after configurable TTL.
 - Add duplicate SOP Instance detection and configurable duplicate policies (reject, overwrite, keep both).
 - Write storage performance benchmarks targeting Apple Silicon (M-series).
 
@@ -54,13 +63,20 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
 
 ## Milestone 4 — Image Codec Integration
 
-**Goal:** Integrate Raster-Lab compression frameworks for full transfer syntax support.
+**Goal:** Integrate Raster-Lab compression frameworks for full transfer syntax support with smart storage management.
 
 - Integrate [J2KSwift](https://github.com/Raster-Lab/J2KSwift) — JPEG 2000 lossless/lossy encoding and decoding.
 - Integrate [JLSwift](https://github.com/Raster-Lab/JLSwift) — JPEG-LS lossless/near-lossless encoding and decoding.
 - Integrate [JXLSwift](https://github.com/Raster-Lab/JXLSwift) — JPEG XL encoding and decoding.
 - Integrate [OpenJP3D](https://github.com/Raster-Lab/OpenJP3D) — JP3D volumetric compression for 3D datasets.
-- Implement on-the-fly transcoding during C-STORE (inbound re-compression to configured archive syntax).
+- Implement **Compressed Copy on Receipt** — optional server-side policy to create an additional compressed copy (e.g., JPEG 2000, JPEG-LS) of each study at ingest time; supports tele-radiology and bandwidth-constrained retrieval scenarios.
+- Implement **Unified Object Presentation** — original and compressed copies of the same study are presented as a single logical item to end users; the PACS automatically selects whichever representation is most appropriate for the requesting client. This should be seamless and transparent.
+- Define and implement the **Representation Model** — manage multiple derivative representations per study:
+  - **Per Modality** — default archive codec per modality type (e.g., JPEG-LS lossless for CR/DX, JPEG 2000 for CT/MR, uncompressed for US); configurable per-modality ingest and compressed-copy policies.
+  - **Per Site** — site-level storage profiles defining which representations to create and retain (e.g., main site keeps originals + lossless, satellite site keeps lossy only).
+  - **Per Tele-Radiology Destination** — destination-specific compressed copies pre-built at ingest or on first request; codec, quality, and resolution rules per remote reading site; bandwidth-aware selection.
+  - **Derivative Limit** — configurable maximum number of representations per study; oldest/least-used derivatives pruned by policy.
+- Implement on-demand transcoding — transcode only when a client requests a transfer syntax that differs from the stored format.
 - Implement background batch transcoding for existing archive data.
 - Add transfer syntax negotiation in association handling for all supported codecs.
 - Benchmark codec performance on Apple Silicon vs. Linux (NEON/SIMD paths).
@@ -155,11 +171,23 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
 
 ## Milestone 10 — Worklist, MPPS & Workflow
 
-**Goal:** Support modality worklist and procedure tracking for clinical workflow.
+**Goal:** Support modality worklist, procedure tracking, and RIS-friendly notification APIs for clinical workflow.
 
 - Implement **Modality Worklist (MWL) SCP** — serve scheduled procedure step information to modalities.
 - Implement **Modality Performed Procedure Step (MPPS) SCP** — receive procedure status (in-progress, completed, discontinued).
-- Implement **Instance Availability Notification** — notify downstream systems when studies become available.
+- Implement **Instance Availability Notification (IAN)** — notify downstream systems (including RIS) when studies become available, both as a DICOM service and as a RESTful API.
+- Implement **IAN-Style REST APIs for RIS Integration** — RESTful endpoints that mirror IAN semantics, enabling RIS and other non-DICOM systems to subscribe to study-available, study-updated, and study-archived events via webhooks or polling.
+- Define and implement the **RIS Event Catalog** — the full set of lifecycle events published via DICOM IAN and RESTful webhooks:
+  - `study.received` — first instance of a new study stored (payload: studyInstanceUID, accessionNumber, patientID, patientName, modality, studyDate, studyDescription, receivingAE, sourceAE, timestamp).
+  - `study.updated` — additional instances arrive for an existing study (payload: studyInstanceUID, accessionNumber, seriesCount, instanceCount, latestSeriesUID, sourceAE, timestamp).
+  - `study.complete` — study completeness criteria met (payload: studyInstanceUID, accessionNumber, patientID, modality, seriesCount, instanceCount, studyStatus, timestamp).
+  - `study.available` — study available for retrieval / IAN equivalent (payload: studyInstanceUID, accessionNumber, patientID, retrieveAE, retrieveURL, availableTransferSyntaxes[], timestamp).
+  - `study.routed` — study forwarded to a destination (payload: studyInstanceUID, accessionNumber, destinationAE, destinationURL, transferSyntaxUsed, routeRuleID, timestamp).
+  - `study.archived` — study migrated to near-line/offline tier (payload: studyInstanceUID, accessionNumber, storageTier, archiveFormat, archivePath, timestamp).
+  - `study.rehydrated` — study recalled to online tier (payload: studyInstanceUID, accessionNumber, previousTier, currentTier, recallDuration, timestamp).
+  - `study.deleted` — study permanently removed (payload: studyInstanceUID, accessionNumber, patientID, deletionReason, deletedBy, timestamp).
+  - `study.error` — processing error (payload: studyInstanceUID, accessionNumber, errorCode, errorMessage, stage, timestamp).
+  - Webhook delivery via JSON/HTTPS POST with HMAC-SHA256 signatures, configurable retry with exponential back-off, and subscription management via the Admin API.
 - Integrate with HL7 v2.x ORM/ORU messages via [HL7kit](https://github.com/Raster-Lab/HL7kit) for order-driven workflows.
 - Add worklist management screens to the web console.
 
@@ -249,14 +277,14 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
 |---|---|---|
 | 1 | Project Bootstrap & Core Infrastructure | SPM workspace, CI, architecture foundations |
 | 2 | DICOM Association & Verification | C-ECHO SCP/SCU, TCP association handling |
-| 3 | Storage Service | C-STORE SCP/SCU, on-disk archive, metadata DB |
-| 4 | Image Codec Integration | J2KSwift, JLSwift, JXLSwift, OpenJP3D transcoding |
+| 3 | Storage Service | C-STORE SCP/SCU, on-disk archive, metadata DB, store-as-received, serve-as-stored, ZIP/TAR+Zstd packaging, storage policy matrix |
+| 4 | Image Codec Integration | J2KSwift, JLSwift, JXLSwift, OpenJP3D, compressed copy on receipt, unified object presentation, representation model |
 | 5 | Query/Retrieve Services | C-FIND, C-MOVE, C-GET SCP/SCU |
 | 6 | DICOMweb Services | WADO-RS, QIDO-RS, STOW-RS, UPS-RS |
 | 7 | Web Administration Console | Admin REST API, responsive web UI, setup wizard |
 | 8 | User Management & LDAP | LDAP auth, RBAC, DICOM LDAP configuration |
 | 9 | Near-Line Storage & Backup | HSM, storage commitment, backup & recovery |
-| 10 | Worklist, MPPS & Workflow | MWL SCP, MPPS, HL7-driven workflow |
+| 10 | Worklist, MPPS & Workflow | MWL SCP, MPPS, IAN (DICOM + REST), RIS event catalog, webhook delivery |
 | 11 | HL7 & FHIR Interoperability | HL7 v2.x MLLP, FHIR R4 resources |
 | 12 | Security Hardening & IHE Compliance | ATNA, anonymisation, ACLs, IHE profiles |
 | 13 | Monitoring, Metrics & Operations | Prometheus, Docker, systemd, health checks |

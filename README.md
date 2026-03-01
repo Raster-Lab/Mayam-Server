@@ -59,6 +59,8 @@ Mayam Server follows the **DICOM Standard 2026a** (XML edition) and leverages th
 - **Unified Object Presentation** — Original and compressed copies of the same study are presented as a single logical item to end users; the PACS automatically serves whichever representation is most appropriate for the requesting client.
 - **Lossless & Lossy Transcoding** — On-the-fly or background transcoding between transfer syntaxes, triggered only when needed.
 - **De-Duplication** — Content-addressable detection of duplicate SOP instances.
+- **Delete Protect** — Entity-level deletion protection at Patient, Accession, and Study level; when set, the record and all child records cannot be deleted until the flag is explicitly removed by an authorised user.
+- **Privacy Flag** — Entity-level access restriction at Patient, Accession, and Study level; when set, routing and query access is limited to explicitly authorised users or roles.
 
 #### Storage Policy Matrix
 
@@ -69,7 +71,7 @@ Configurable rules govern data handling at each lifecycle stage:
 | **Ingest** | Store-as-received; optional compressed-copy creation; duplicate detection; integrity checksum; study-level ZIP/TAR+Zstd packaging; per-modality codec selection |
 | **Online** | Serve-as-stored; on-demand transcoding for unsupported clients; QoS priority for STAT studies |
 | **Near-Line** | Policy-driven migration triggers (age, last-access, modality, study status); archive packaging format (ZIP / TAR+Zstd); retention rules |
-| **Offline** | Tape / cold object-storage tier; minimum retention periods; deletion protection for legal-hold studies |
+| **Offline** | Tape / cold object-storage tier; minimum retention periods; deletion protection for legal-hold studies; Delete Protect enforcement |
 | **Rehydrate** | On-demand recall to online tier; prefetch hints from query patterns; automatic cache eviction after configurable TTL |
 
 #### Representation Model
@@ -157,6 +159,8 @@ Leveraging Raster-Lab's native Swift codecs for best-in-class performance on App
 - **IHE ATNA Audit Trail** — Tamper-evident logging of all access and modifications.
 - **Data Integrity** — SHA-256 checksums on archived objects; periodic integrity scans.
 - **Access Control Lists (ACLs)** — Fine-grained per-study, per-patient access where required.
+- **Delete Protect** — Configurable deletion protection flag at Patient, Accession, and Study level; prevents accidental or unauthorised deletion of protected records.
+- **Privacy Flag** — Configurable access restriction flag at Patient, Accession, and Study level; restricts query, retrieve, and routing to authorised users.
 - **Anonymisation / Pseudonymisation** — Built-in DICOM tag stripping profiles for research export.
 - **GDPR / HIPAA Awareness** — Configuration guides and tooling to support regulatory compliance workflows.
 
@@ -183,7 +187,7 @@ Leveraging Raster-Lab's native Swift codecs for best-in-class performance on App
 | Image Codecs | J2KSwift, JLSwift, JXLSwift, OpenJP3D |
 | HL7 / FHIR | [HL7kit](https://github.com/Raster-Lab/HL7kit) |
 | Web Framework | Hummingbird (Swift) |
-| Database | SQLite (embedded) / PostgreSQL (scaled) |
+| Database | PostgreSQL 18.3 (primary) / SQLite (embedded) |
 | Admin UI | HTML5, CSS3, Vanilla JS (no heavy frameworks) |
 | Authentication | LDAP (DICOM Configuration schema) |
 | Build System | Swift Package Manager |
@@ -233,6 +237,9 @@ Mayam-Server/
 ├── Sources/
 │   ├── MayamServer/          # Main server entry point
 │   ├── MayamCore/            # Core PACS engine, storage, DICOM services
+│   │   ├── Database/
+│   │   │   └── Migrations/   # PostgreSQL schema migrations
+│   │   └── Models/           # Patient, Study, Accession, etc.
 │   ├── MayamWeb/             # DICOMweb & Admin REST API
 │   ├── MayamAdmin/           # Web console static assets
 │   └── MayamCLI/             # Command-line administration tools

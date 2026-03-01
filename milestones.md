@@ -43,8 +43,11 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
 
 - Implement **C-STORE SCP** — receive DICOM objects from modalities and workstations.
 - Design the on-disk storage layout (configurable directory hierarchy by Patient/Study/Series).
-- Implement the metadata index database (SQLite for single-node; abstraction layer for future PostgreSQL).
+- Implement the metadata index database (PostgreSQL 18.3 primary; SQLite for lightweight/embedded deployments).
 - Store received objects with SHA-256 integrity checksums.
+- Implement **Delete Protect** flag at Patient, Accession, and Study level — when set, the entity (and all child records) is protected from deletion until the flag is explicitly removed by an authorised user.
+- Implement **Privacy Flag** at Patient, Accession, and Study level — when set, routing and query access to the entity's data is restricted to explicitly authorised users or roles.
+- Create a `protection_flag_audit` table to record all changes to Delete Protect and Privacy Flag values (who, when, reason).
 - **Store-As-Received** — preserve the original transfer syntax of incoming objects; do not decompress compressed data on ingest.
 - Support core Transfer Syntaxes: Implicit VR Little Endian, Explicit VR Little/Big Endian, Deflated Explicit VR, RLE.
 - Implement **C-STORE SCU** — send/forward DICOM objects to remote DICOM nodes.
@@ -219,6 +222,8 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
   - Tamper-evident local audit log storage.
 - Implement **Anonymisation / Pseudonymisation** profiles for research data export (DICOM PS3.15 Annex E).
 - Implement per-study and per-patient **Access Control Lists (ACLs)** for sensitive data.
+- Enforce **Delete Protect** — reject deletion requests at Patient, Accession, and Study level when the flag is set; require explicit flag removal before deletion proceeds.
+- Enforce **Privacy Flag** — restrict C-FIND, C-MOVE, C-GET, and DICOMweb query/retrieve responses for flagged entities to explicitly authorised users; suppress flagged entities from routing rules unless an override is present.
 - Conduct security review: TLS configuration, input validation, DICOM fuzzing, API authentication.
 - Publish **IHE Integration Statements** for targeted profiles (SWF, PIR, CPI, KIN, XDS-I.b).
 - Provide GDPR and HIPAA compliance configuration guides.
@@ -277,7 +282,7 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
 |---|---|---|
 | 1 | Project Bootstrap & Core Infrastructure | SPM workspace, CI, architecture foundations |
 | 2 | DICOM Association & Verification | C-ECHO SCP/SCU, TCP association handling |
-| 3 | Storage Service | C-STORE SCP/SCU, on-disk archive, metadata DB, store-as-received, serve-as-stored, ZIP/TAR+Zstd packaging, storage policy matrix |
+| 3 | Storage Service | C-STORE SCP/SCU, on-disk archive, metadata DB (PostgreSQL 18.3), store-as-received, serve-as-stored, ZIP/TAR+Zstd packaging, storage policy matrix, Delete Protect & Privacy Flag |
 | 4 | Image Codec Integration | J2KSwift, JLSwift, JXLSwift, OpenJP3D, compressed copy on receipt, unified object presentation, representation model |
 | 5 | Query/Retrieve Services | C-FIND, C-MOVE, C-GET SCP/SCU |
 | 6 | DICOMweb Services | WADO-RS, QIDO-RS, STOW-RS, UPS-RS |
@@ -286,7 +291,7 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
 | 9 | Near-Line Storage & Backup | HSM, storage commitment, backup & recovery |
 | 10 | Worklist, MPPS & Workflow | MWL SCP, MPPS, IAN (DICOM + REST), RIS event catalog, webhook delivery |
 | 11 | HL7 & FHIR Interoperability | HL7 v2.x MLLP, FHIR R4 resources |
-| 12 | Security Hardening & IHE Compliance | ATNA, anonymisation, ACLs, IHE profiles |
+| 12 | Security Hardening & IHE Compliance | ATNA, anonymisation, ACLs, Delete Protect & Privacy Flag enforcement, IHE profiles |
 | 13 | Monitoring, Metrics & Operations | Prometheus, Docker, systemd, health checks |
 | 14 | Performance Optimisation | Benchmarks, tuning, stress testing |
 | 15 | Documentation, Packaging & Release | Conformance statement, guides, v1.0.0 |

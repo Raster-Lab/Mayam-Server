@@ -206,16 +206,27 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
 
 ## Milestone 11 — HL7 & FHIR Interoperability 🔲 Not Started
 
-**Goal:** Full healthcare messaging integration.
+**Goal:** Full healthcare messaging integration using [HL7kit](https://github.com/Raster-Lab/HL7kit). All HL7 v2.x, HL7 v3.x, and FHIR R4 functionality **must** be built on HL7kit's `HL7v2Kit`, `HL7v3Kit`, and `FHIRkit` modules respectively — do not re-implement parsing, serialisation, validation, networking, or resource models that HL7kit already provides.
 
-- [ ] Implement an **HL7 v2.x MLLP listener** using HL7kit for ADT (patient demographics), ORM (orders), and ORU (results) messages.
-- [ ] Implement **HL7 FHIR R4** resource endpoints:
-  - `ImagingStudy` — expose studies as FHIR resources.
-  - `Patient` — patient demographics synchronisation.
-  - `DiagnosticReport` — radiology report references.
-  - `Endpoint` — FHIR endpoint discovery for DICOMweb URLs.
-- [ ] Implement configurable message routing and transformation rules.
-- [ ] Support HL7 message acknowledgement (ACK/NACK) workflows.
+> **HL7kit availability note (as of February 2026):**
+>
+> The following capabilities required by Mayam Server are **already available** in HL7kit:
+> - HL7 v2.x MLLP client/server, ADT/ORM/ORU/ACK message types, validation, and TLS networking (`HL7v2Kit`)
+> - FHIR R4 `Patient` resource, `DiagnosticReport` resource, data model, REST client, search, validation, SMART on FHIR auth, terminology services, and subscriptions (`FHIRkit`)
+>
+> The following FHIR R4 resources required by Mayam Server are **not yet implemented** in HL7kit and must be added to HL7kit's `FHIRkit` module **before** this milestone can be completed:
+> - `ImagingStudy` — needed to expose DICOM studies as FHIR resources.
+> - `Endpoint` — needed for FHIR endpoint discovery for DICOMweb URLs.
+
+- [ ] **Prerequisite:** Contribute `ImagingStudy` and `Endpoint` FHIR R4 resource implementations to [HL7kit's FHIRkit module](https://github.com/Raster-Lab/HL7kit/tree/main/Sources/FHIRkit) before starting Mayam Server integration.
+- [ ] Implement an **HL7 v2.x MLLP listener** using HL7kit's `HL7v2Kit` module for ADT (patient demographics), ORM (orders), and ORU (results) messages.
+- [ ] Implement **HL7 FHIR R4** resource endpoints using HL7kit's `FHIRkit` module:
+  - `ImagingStudy` — expose studies as FHIR resources (requires HL7kit `FHIRkit` addition).
+  - `Patient` — patient demographics synchronisation (available in HL7kit `FHIRkit`).
+  - `DiagnosticReport` — radiology report references (available in HL7kit `FHIRkit`).
+  - `Endpoint` — FHIR endpoint discovery for DICOMweb URLs (requires HL7kit `FHIRkit` addition).
+- [ ] Implement configurable message routing and transformation rules, leveraging HL7kit's `MessageRouter` and transformation infrastructure where applicable.
+- [ ] Support HL7 message acknowledgement (ACK/NACK) workflows using HL7kit's `HL7v2Kit` ACK message support.
 - [ ] Write integration tests with sample HL7 and FHIR message flows.
 
 ---
@@ -299,7 +310,7 @@ This document defines the phased roadmap for Mayam Server. Each milestone is a s
 | 8 | User Management & LDAP | 🔲 Not Started | LDAP auth, RBAC, DICOM LDAP configuration |
 | 9 | Near-Line Storage & Backup | 🔲 Not Started | HSM, storage commitment, backup & recovery |
 | 10 | Worklist, MPPS & Workflow | 🔲 Not Started | MWL SCP, MPPS, IAN (DICOM + REST), RIS event catalog, webhook delivery |
-| 11 | HL7 & FHIR Interoperability | 🔲 Not Started | HL7 v2.x MLLP, FHIR R4 resources |
+| 11 | HL7 & FHIR Interoperability | 🔲 Not Started | HL7 v2.x MLLP (via HL7kit HL7v2Kit), FHIR R4 resources (via HL7kit FHIRkit); requires `ImagingStudy` & `Endpoint` additions to HL7kit |
 | 12 | Security Hardening & IHE Compliance | 🔲 Not Started | ATNA, anonymisation, ACLs, Delete Protect & Privacy Flag enforcement, IHE profiles |
 | 13 | Monitoring, Metrics & Operations | 🔲 Not Started | Prometheus, Docker, systemd, health checks |
 | 14 | Performance Optimisation | 🔲 Not Started | Benchmarks, tuning, stress testing |

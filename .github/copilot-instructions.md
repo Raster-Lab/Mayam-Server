@@ -77,7 +77,7 @@ Key dependencies include [DICOMKit](https://github.com/Raster-Lab/DICOMKit), [J2
 
 ## Test Code Coverage
 
-- **Maintain a minimum of 95 % test code coverage** across the entire codebase.
+- **Maintain a minimum of 95% test code coverage** across the entire codebase.
 - Every new feature, bug fix, or refactor **must** include corresponding unit tests or integration tests that preserve or increase overall coverage.
 - Write tests in the matching `Tests/` target (e.g. `Tests/MayamCoreTests/` for `MayamCore` source changes).
 - Use **XCTest** as the testing framework.
@@ -86,7 +86,7 @@ Key dependencies include [DICOMKit](https://github.com/Raster-Lab/DICOMKit), [J2
 - Use descriptive test method names following the pattern `test_<unit>_<scenario>_<expectedBehaviour>` (e.g. `test_patient_deleteProtectEnabled_preventsRemoval`).
 - Mock external dependencies (database, network, file system) in unit tests to ensure isolation and speed.
 - Run the full test suite with `swift test --enable-code-coverage` and verify coverage before merging.
-- Do not reduce existing coverage with any change; if legacy code is modified, add tests to bring it to the 95 % threshold.
+- Do not reduce existing coverage with any change; if legacy code is modified, add tests to bring it to the 95% threshold.
 
 ---
 

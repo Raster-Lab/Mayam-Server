@@ -46,6 +46,14 @@ Key dependencies include [DICOMKit](https://github.com/Raster-Lab/DICOMKit), [J2
 - Respect **Delete Protect** and **Privacy Flag** semantics on Patient, Accession, and Study entities; never bypass these flags without explicit authorisation.
 - Audit all changes to protection flags in the `protection_flag_audit` table.
 
+### HL7 & FHIR Interoperability
+
+- Use **[HL7kit](https://github.com/Raster-Lab/HL7kit)** for **all** HL7 and FHIR functionality — do not re-implement parsing, serialisation, validation, networking, or resource models that HL7kit already provides.
+- Use HL7kit's **`HL7v2Kit`** module for HL7 v2.x messaging (MLLP transport, ADT/ORM/ORU/ACK message types, data types, validation, and encoding).
+- Use HL7kit's **`HL7v3Kit`** module for any HL7 v3.x / CDA requirements.
+- Use HL7kit's **`FHIRkit`** module for FHIR R4 resources, REST client operations, search, validation, SMART on FHIR authentication, terminology services, and subscriptions.
+- If a required FHIR resource or HL7 capability is **not yet available** in HL7kit, contribute the implementation to [HL7kit](https://github.com/Raster-Lab/HL7kit) first rather than building it directly in Mayam Server.
+
 ### Error Handling
 
 - Define domain-specific error types conforming to `Error` and `Sendable`.

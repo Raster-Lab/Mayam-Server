@@ -133,8 +133,11 @@ final class ConfigurationTests: XCTestCase {
 
         let config = try ConfigurationLoader.load(from: configFile.path)
         XCTAssertEqual(config.dicom.aeTitle, "PARTIAL")
-        // The rest should be Yams defaults (zero values for missing fields)
-        // or default values if Codable provides them via init
+        XCTAssertEqual(config.dicom.port, 11112)
+        XCTAssertEqual(config.dicom.maxAssociations, 64)
+        XCTAssertEqual(config.storage.archivePath, "/var/lib/mayam/archive")
+        XCTAssertTrue(config.storage.checksumEnabled)
+        XCTAssertEqual(config.log.level, "info")
     }
 
     func test_configurationLoader_environmentOverrides_applyCorrectly() throws {

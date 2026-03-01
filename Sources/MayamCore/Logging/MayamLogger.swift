@@ -6,9 +6,10 @@ import Foundation
 
 /// Cross-platform logging facade for Mayam Server.
 ///
-/// On all platforms the subsystem uses `swift-log` (`Logging` module) which
-/// integrates with Apple's `os_log` on macOS when the `swift-log` backend is
-/// configured via `LoggingSystem.bootstrap`.
+/// On all platforms the subsystem uses `swift-log` (`Logging` module).
+/// The default bootstrap configures `StreamLogHandler` (stderr).
+/// A custom bootstrap can be provided to route logs through Apple's `os_log`
+/// on macOS or any other `swift-log`-compatible backend.
 ///
 /// ## Usage
 /// ```swift

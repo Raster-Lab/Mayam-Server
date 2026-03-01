@@ -207,8 +207,6 @@ Leveraging Raster-Lab's native Swift codecs for best-in-class performance on App
 
 ## Getting Started
 
-> **Note:** Mayam Server is currently in the planning and early development phase. Build and installation instructions will be provided as the project progresses through its [milestones](milestones.md).
-
 ### Requirements
 
 - **macOS 15+** (Sequoia) with Xcode 16.3+ / Swift 6.2, or
@@ -216,41 +214,114 @@ Leveraging Raster-Lab's native Swift codecs for best-in-class performance on App
 - 4 GB RAM minimum; 8 GB+ recommended.
 - SSD storage recommended for the primary archive.
 
-### Quick Start (Future)
+### Building
 
 ```bash
 # Clone and build
 git clone https://github.com/Raster-Lab/Mayam-Server.git
 cd Mayam-Server
-swift build -c release
+swift build
 
-# Run with guided setup
-.build/release/mayam-server --setup
+# Build in release mode
+swift build -c release
 ```
+
+### Running
+
+```bash
+# Run the server (uses Config/mayam.yaml or defaults)
+swift run mayam-server
+
+# Run the CLI tools
+swift run mayam-cli config validate Config/mayam.yaml
+```
+
+### Testing
+
+```bash
+# Run all tests
+swift test
+
+# Run tests with code coverage
+swift test --enable-code-coverage
+```
+
+### Configuration
+
+Mayam Server uses a layered configuration system:
+
+1. **Built-in defaults** — sensible defaults for all settings.
+2. **YAML configuration file** — `Config/mayam.yaml` (or set `MAYAM_CONFIG` environment variable to a custom path).
+3. **Environment variable overrides** — override individual settings:
+   - `MAYAM_DICOM_AE_TITLE` — AE Title (default: `MAYAM`)
+   - `MAYAM_DICOM_PORT` — DICOM port (default: `11112`)
+   - `MAYAM_DICOM_MAX_ASSOCIATIONS` — maximum concurrent associations (default: `64`)
+   - `MAYAM_STORAGE_ARCHIVE_PATH` — archive directory path
+   - `MAYAM_STORAGE_CHECKSUM_ENABLED` — enable/disable SHA-256 checksums (`true`/`false`)
+   - `MAYAM_LOG_LEVEL` — log level (`trace`, `debug`, `info`, `notice`, `warning`, `error`, `critical`)
 
 ---
 
-## Project Structure (Planned)
+## Architecture Overview
+
+Mayam Server uses **Swift structured concurrency** with an actor-based architecture to eliminate data races:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    MayamServer                       │
+│              (Application Entry Point)               │
+├─────────────────────────────────────────────────────┤
+│                    ServerActor                       │
+│    ┌──────────────────┐  ┌────────────────────┐     │
+│    │ AssociationActor  │  │   StorageActor     │     │
+│    │ (per connection)  │  │   (singleton)      │     │
+│    └──────────────────┘  └────────────────────┘     │
+├─────────────────────────────────────────────────────┤
+│                    MayamCore                         │
+│  ┌────────────┐ ┌──────────────┐ ┌──────────────┐  │
+│  │ Config     │ │   Logging    │ │   Models     │  │
+│  │ Loader     │ │  (swift-log) │ │  (Patient,   │  │
+│  │ (YAML+Env) │ │              │ │   Study, …)  │  │
+│  └────────────┘ └──────────────┘ └──────────────┘  │
+├─────────────────────────────────────────────────────┤
+│  MayamWeb          MayamAdmin        MayamCLI       │
+│  (DICOMweb/        (Web Console      (CLI           │
+│   Admin API)        Assets)           Tools)        │
+└─────────────────────────────────────────────────────┘
+```
+
+- **`ServerActor`** — top-level coordinator; owns the DICOM listener lifecycle, manages association actors, and coordinates storage.
+- **`AssociationActor`** — one per active DICOM association; handles the Upper Layer Protocol state machine (A-ASSOCIATE, P-DATA, A-RELEASE, A-ABORT).
+- **`StorageActor`** — singleton; serialises archive writes, computes checksums, and enforces store-as-received semantics.
+- **`ConfigurationLoader`** — loads YAML configuration with environment variable overrides.
+- **`MayamLogger`** — cross-platform logging via `swift-log` (integrates with `os_log` on macOS).
+
+---
+
+## Project Structure
 
 ```
 Mayam-Server/
 ├── Sources/
 │   ├── MayamServer/          # Main server entry point
 │   ├── MayamCore/            # Core PACS engine, storage, DICOM services
+│   │   ├── Actors/           # ServerActor, AssociationActor, StorageActor
+│   │   ├── Configuration/    # YAML config loader, environment overrides
 │   │   ├── Database/
 │   │   │   └── Migrations/   # PostgreSQL schema migrations
+│   │   ├── Logging/          # Cross-platform logging subsystem
 │   │   └── Models/           # Patient, Study, Accession, etc.
 │   ├── MayamWeb/             # DICOMweb & Admin REST API
 │   ├── MayamAdmin/           # Web console static assets
 │   └── MayamCLI/             # Command-line administration tools
 ├── Tests/
-│   ├── MayamCoreTests/
-│   ├── MayamWebTests/
-│   └── IntegrationTests/
+│   ├── MayamCoreTests/       # Core unit tests
+│   └── MayamWebTests/        # Web layer tests
 ├── Config/
 │   └── mayam.yaml            # Default configuration
-├── Docker/
-│   └── Dockerfile
+├── .github/
+│   └── workflows/
+│       └── ci.yml            # CI for macOS + Linux
 ├── Package.swift
 ├── README.md
 └── milestones.md

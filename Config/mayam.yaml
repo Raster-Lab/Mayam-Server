@@ -1,0 +1,14 @@
+# Mayam Server — Default Configuration
+# See README.md for documentation on all configuration options.
+
+dicom:
+  aeTitle: "MAYAM"
+  port: 11112
+  maxAssociations: 64
+
+storage:
+  archivePath: "/var/lib/mayam/archive"
+  checksumEnabled: true
+
+log:
+  level: "info"

@@ -30,6 +30,9 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/Raster-Lab/DICOMKit.git", branch: "main"),
+        .package(url: "https://github.com/Raster-Lab/J2KSwift.git", branch: "main"),
+        .package(url: "https://github.com/Raster-Lab/JLSwift.git", branch: "main"),
+        .package(url: "https://github.com/Raster-Lab/JXLSwift.git", branch: "main"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.6.3"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.3.1"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
@@ -52,6 +55,11 @@ let package = Package(
             dependencies: [
                 .product(name: "DICOMKit", package: "DICOMKit"),
                 .product(name: "DICOMNetwork", package: "DICOMKit"),
+                .product(name: "J2KCore", package: "J2KSwift"),
+                .product(name: "J2KCodec", package: "J2KSwift"),
+                .product(name: "J2K3D", package: "J2KSwift"),
+                .product(name: "JPEGLS", package: "JLSwift"),
+                .product(name: "JXLSwift", package: "JXLSwift"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "Yams", package: "Yams"),
                 .product(name: "NIO", package: "swift-nio"),

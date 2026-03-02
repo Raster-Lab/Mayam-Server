@@ -60,6 +60,5 @@ CREATE INDEX idx_studies_study_description  ON studies (study_description);
 
 COMMENT ON INDEX idx_patients_patient_name IS 'Supports C-FIND patient name wildcard queries.';
 COMMENT ON INDEX idx_studies_modality IS 'Supports C-FIND modality filtering queries.';
-COMMENT ON INDEX idx_studies_study_date IS 'Supports C-FIND study date range queries.';
 
 COMMIT;

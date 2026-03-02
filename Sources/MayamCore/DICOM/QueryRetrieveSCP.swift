@@ -143,7 +143,10 @@ public struct QueryRetrieveSCP: SCPService, Sendable {
         let targetElement: UInt16 = 0x0052
         var offset = 0
 
-        while offset + 8 <= identifier.count {
+        // Minimum header: 4 bytes tag + 4 bytes length (implicit VR)
+        let minimumTagHeaderSize = 8
+
+        while offset + minimumTagHeaderSize <= identifier.count {
             let group = UInt16(identifier[offset]) | (UInt16(identifier[offset + 1]) << 8)
             let element = UInt16(identifier[offset + 2]) | (UInt16(identifier[offset + 3]) << 8)
             offset += 4
@@ -155,10 +158,12 @@ public struct QueryRetrieveSCP: SCPService, Sendable {
                         (UInt32(identifier[offset + 2]) << 16) |
                         (UInt32(identifier[offset + 3]) << 24)
 
-            // Check for explicit VR: if bytes at offset look like ASCII letters
+            // Detect explicit VR by checking if bytes at offset are uppercase ASCII letters (A–Z)
+            let asciiUpperA: UInt8 = 0x41 // 'A'
+            let asciiUpperZ: UInt8 = 0x5A // 'Z'
             let isExplicitVR = offset + 2 <= identifier.count &&
-                identifier[offset] >= 0x41 && identifier[offset] <= 0x5A &&
-                identifier[offset + 1] >= 0x41 && identifier[offset + 1] <= 0x5A
+                identifier[offset] >= asciiUpperA && identifier[offset] <= asciiUpperZ &&
+                identifier[offset + 1] >= asciiUpperA && identifier[offset + 1] <= asciiUpperZ
 
             var valueLength: UInt32
             if isExplicitVR {

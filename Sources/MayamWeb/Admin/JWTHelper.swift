@@ -117,6 +117,15 @@ public enum JWTHelper: Sendable {
         let payloadB64 = String(parts[1])
         let signatureB64 = String(parts[2])
 
+        // Validate header: must declare alg=HS256 to prevent algorithm confusion.
+        guard let headerData = base64URLDecode(headerB64),
+              let headerJSON = try? JSONSerialization.jsonObject(with: headerData) as? [String: Any],
+              let alg = headerJSON["alg"] as? String,
+              alg == "HS256"
+        else {
+            throw JWTError.invalidFormat
+        }
+
         // Verify signature
         let signingInput = "\(headerB64).\(payloadB64)"
         let key = SymmetricKey(data: Data(secret.utf8))

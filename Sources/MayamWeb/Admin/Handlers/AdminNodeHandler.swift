@@ -68,7 +68,7 @@ public actor AdminNodeHandler {
     /// - Throws: ``AdminError/notFound(resource:)`` if no node exists with the given `id`.
     @discardableResult
     public func updateNode(id: UUID, with updated: DicomNode) throws -> DicomNode {
-        guard nodes[id] != nil else {
+        guard let existing = nodes[id] else {
             throw AdminError.notFound(resource: "node \(id)")
         }
         let refreshed = DicomNode(
@@ -78,7 +78,7 @@ public actor AdminNodeHandler {
             port: updated.port,
             description: updated.description,
             tlsEnabled: updated.tlsEnabled,
-            createdAt: nodes[id]!.createdAt,
+            createdAt: existing.createdAt,
             updatedAt: Date()
         )
         nodes[id] = refreshed

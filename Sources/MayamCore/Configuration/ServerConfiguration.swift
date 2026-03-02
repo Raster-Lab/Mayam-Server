@@ -137,6 +137,11 @@ public struct ServerConfiguration: Sendable, Equatable {
         public var sessionExpirySeconds: Int
 
         /// Whether the first-run setup wizard has been completed.
+        ///
+        /// Set to `true` by the Setup Wizard handler after all setup steps are
+        /// finished.  When `false` the Admin Console will redirect users to the
+        /// wizard on first login so that a fresh installation can be configured
+        /// before going into production.
         public var setupCompleted: Bool
 
         public init(

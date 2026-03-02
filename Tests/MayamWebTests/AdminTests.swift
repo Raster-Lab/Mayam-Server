@@ -588,7 +588,7 @@ final class AdminRouterTests: XCTestCase {
         XCTAssertEqual(response.statusCode, 401)
     }
 
-    func test_route_unknownAPIPath_returns404() async {
+    func test_route_unknownAPIPath_requiresAuth_returns401() async {
         let router = makeRouter()
         let request = AdminRequest(method: .get, path: "/admin/api/unknown/path")
         let response = await router.route(request)

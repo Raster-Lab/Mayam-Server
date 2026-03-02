@@ -78,6 +78,11 @@ public actor AdminServer {
         let router = self.router
         let logger = self.logger
 
+        // Warn operators who have not changed the default JWT secret.
+        if configuration.jwtSecret == "change-me-in-production" {
+            logger.warning("Admin server is using the default JWT secret. Set MAYAM_ADMIN_JWT_SECRET or admin.jwtSecret in mayam.yaml before deploying to production.")
+        }
+
         let bootstrap = ServerBootstrap(group: eventLoopGroup)
             .serverChannelOption(ChannelOptions.backlog, value: 256)
             .serverChannelOption(ChannelOptions.socketOption(.so_reuseaddr), value: 1)

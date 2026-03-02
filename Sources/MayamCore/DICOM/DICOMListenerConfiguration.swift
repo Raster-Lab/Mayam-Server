@@ -69,19 +69,24 @@ public struct DICOMListenerConfiguration: Sendable, Equatable {
 
     /// Default transfer syntaxes accepted by the server.
     ///
-    /// Includes the four core transfer syntaxes required by Milestone 3:
+    /// Includes the core uncompressed syntaxes, plus all compressed transfer
+    /// syntaxes supported via the integrated codec frameworks:
     /// - Implicit VR Little Endian (1.2.840.10008.1.2)
     /// - Explicit VR Little Endian (1.2.840.10008.1.2.1)
     /// - Explicit VR Big Endian, retired (1.2.840.10008.1.2.2)
     /// - Deflated Explicit VR Little Endian (1.2.840.10008.1.2.1.99)
     /// - RLE Lossless (1.2.840.10008.1.2.5)
-    public static let defaultAcceptedTransferSyntaxes: Set<String> = [
-        implicitVRLittleEndianTransferSyntaxUID,    // "1.2.840.10008.1.2"
-        explicitVRLittleEndianTransferSyntaxUID,    // "1.2.840.10008.1.2.1"
-        "1.2.840.10008.1.2.2",                     // Explicit VR Big Endian (retired)
-        "1.2.840.10008.1.2.1.99",                  // Deflated Explicit VR Little Endian
-        "1.2.840.10008.1.2.5"                      // RLE Lossless
-    ]
+    /// - JPEG 2000 Lossless (1.2.840.10008.1.2.4.90)
+    /// - JPEG 2000 (1.2.840.10008.1.2.4.91)
+    /// - JPEG-LS Lossless (1.2.840.10008.1.2.4.80)
+    /// - JPEG-LS Near-Lossless (1.2.840.10008.1.2.4.81)
+    /// - HTJ2K Lossless (1.2.840.10008.1.2.4.201)
+    /// - HTJ2K Lossy (1.2.840.10008.1.2.4.202)
+    /// - HTJ2K Lossless RPCL (1.2.840.10008.1.2.4.203)
+    /// - JPEG XL Lossless (1.2.840.10008.1.2.4.110)
+    /// - JPEG XL Lossy (1.2.840.10008.1.2.4.111)
+    public static let defaultAcceptedTransferSyntaxes: Set<String> =
+        TransferSyntaxRegistry.allSupportedUIDs
 
     // MARK: - Initialiser
 

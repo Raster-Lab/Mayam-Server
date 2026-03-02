@@ -49,6 +49,13 @@ public struct StoragePolicy: Sendable, Codable, Equatable {
     /// Whether to produce a ZIP archive of a study before near-line migration.
     public var zipOnArchive: Bool
 
+    // MARK: - Representation Policy
+
+    /// The representation policy governing derivative creation, including
+    /// compressed copy on receipt, per-modality codec rules, site profiles,
+    /// tele-radiology destinations, and derivative limits.
+    public var representationPolicy: RepresentationPolicy
+
     // MARK: - Default Policy
 
     /// The default storage policy applied when no explicit configuration is present.
@@ -57,11 +64,13 @@ public struct StoragePolicy: Sendable, Codable, Equatable {
     /// - Checksum enabled.
     /// - No age-based near-line migration.
     /// - ZIP-on-archive disabled.
+    /// - Default representation policy (compressed copy on receipt disabled).
     public static let `default` = StoragePolicy(
         duplicatePolicy: .reject,
         checksumEnabled: true,
         nearLineMigrationAgeDays: nil,
-        zipOnArchive: false
+        zipOnArchive: false,
+        representationPolicy: .default
     )
 
     // MARK: - Initialiser
@@ -73,15 +82,18 @@ public struct StoragePolicy: Sendable, Codable, Equatable {
     ///   - checksumEnabled: Whether to compute SHA-256 checksums on ingest (default: `true`).
     ///   - nearLineMigrationAgeDays: Age in days that triggers near-line migration (default: `nil`).
     ///   - zipOnArchive: Whether to package studies as ZIP archives before migration (default: `false`).
+    ///   - representationPolicy: Representation policy for derivative creation (default: `.default`).
     public init(
         duplicatePolicy: DuplicatePolicy = .reject,
         checksumEnabled: Bool = true,
         nearLineMigrationAgeDays: Int? = nil,
-        zipOnArchive: Bool = false
+        zipOnArchive: Bool = false,
+        representationPolicy: RepresentationPolicy = .default
     ) {
         self.duplicatePolicy = duplicatePolicy
         self.checksumEnabled = checksumEnabled
         self.nearLineMigrationAgeDays = nearLineMigrationAgeDays
         self.zipOnArchive = zipOnArchive
+        self.representationPolicy = representationPolicy
     }
 }

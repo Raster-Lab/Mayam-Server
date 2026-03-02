@@ -82,6 +82,30 @@ public struct ServerConfiguration: Sendable, Equatable {
         }
     }
 
+    /// Codec configuration for image transcoding and compressed copy creation.
+    public struct Codec: Sendable, Equatable {
+        /// Whether on-demand transcoding is enabled (transcode only when a
+        /// client requests a transfer syntax that differs from stored).
+        public var onDemandTranscodingEnabled: Bool
+
+        /// Whether background batch transcoding is enabled for existing
+        /// archive data.
+        public var backgroundTranscodingEnabled: Bool
+
+        /// Maximum number of concurrent transcoding operations.
+        public var maxConcurrentTranscodings: Int
+
+        public init(
+            onDemandTranscodingEnabled: Bool = true,
+            backgroundTranscodingEnabled: Bool = false,
+            maxConcurrentTranscodings: Int = 4
+        ) {
+            self.onDemandTranscodingEnabled = onDemandTranscodingEnabled
+            self.backgroundTranscodingEnabled = backgroundTranscodingEnabled
+            self.maxConcurrentTranscodings = maxConcurrentTranscodings
+        }
+    }
+
     // MARK: - Stored Properties
 
     /// DICOM network settings.
@@ -93,16 +117,21 @@ public struct ServerConfiguration: Sendable, Equatable {
     /// Logging settings.
     public var log: Log
 
+    /// Codec settings.
+    public var codec: Codec
+
     // MARK: - Initialiser
 
     public init(
         dicom: DICOM = DICOM(),
         storage: Storage = Storage(),
-        log: Log = Log()
+        log: Log = Log(),
+        codec: Codec = Codec()
     ) {
         self.dicom = dicom
         self.storage = storage
         self.log = log
+        self.codec = codec
     }
 }
 
@@ -110,7 +139,7 @@ public struct ServerConfiguration: Sendable, Equatable {
 
 extension ServerConfiguration: Codable {
     enum CodingKeys: String, CodingKey {
-        case dicom, storage, log
+        case dicom, storage, log, codec
     }
 
     public init(from decoder: any Decoder) throws {
@@ -118,6 +147,7 @@ extension ServerConfiguration: Codable {
         self.dicom = try container.decodeIfPresent(DICOM.self, forKey: .dicom) ?? DICOM()
         self.storage = try container.decodeIfPresent(Storage.self, forKey: .storage) ?? Storage()
         self.log = try container.decodeIfPresent(Log.self, forKey: .log) ?? Log()
+        self.codec = try container.decodeIfPresent(Codec.self, forKey: .codec) ?? Codec()
     }
 }
 
@@ -158,5 +188,18 @@ extension ServerConfiguration.Log: Codable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.level = try container.decodeIfPresent(String.self, forKey: .level) ?? "info"
+    }
+}
+
+extension ServerConfiguration.Codec: Codable {
+    enum CodingKeys: String, CodingKey {
+        case onDemandTranscodingEnabled, backgroundTranscodingEnabled, maxConcurrentTranscodings
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.onDemandTranscodingEnabled = try container.decodeIfPresent(Bool.self, forKey: .onDemandTranscodingEnabled) ?? true
+        self.backgroundTranscodingEnabled = try container.decodeIfPresent(Bool.self, forKey: .backgroundTranscodingEnabled) ?? false
+        self.maxConcurrentTranscodings = try container.decodeIfPresent(Int.self, forKey: .maxConcurrentTranscodings) ?? 4
     }
 }

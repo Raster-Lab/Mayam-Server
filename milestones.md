@@ -94,18 +94,18 @@ This document defines the phased roadmap for Mayam. Each milestone is a self-con
 
 ---
 
-## Milestone 5 — Query/Retrieve Services (C-FIND, C-MOVE, C-GET) 🔲 Not Started
+## Milestone 5 — Query/Retrieve Services (C-FIND, C-MOVE, C-GET) ✅ Complete
 
 **Goal:** Enable querying the archive and retrieving studies.
 
-- [ ] Implement **C-FIND SCP** at Patient, Study, Series, and Image (Instance) query levels.
-- [ ] Support standard DICOM query attributes, wildcards, date ranges, and modality filtering.
-- [ ] Implement **C-MOVE SCP** — retrieve studies and route them to a specified destination AE.
-- [ ] Implement **C-GET SCP** — pull-based retrieval within the same association.
-- [ ] Implement **C-FIND SCU**, **C-MOVE SCU**, **C-GET SCU** — for federated queries and upstream retrieval.
-- [ ] Optimise query performance with database indexing strategies.
-- [ ] Support query result pagination for large result sets.
-- [ ] Write conformance tests against DICOM query/retrieve test suites.
+- [x] Implement **C-FIND SCP** at Patient, Study, Series, and Image (Instance) query levels.
+- [x] Support standard DICOM query attributes, wildcards, date ranges, and modality filtering.
+- [x] Implement **C-MOVE SCP** — retrieve studies and route them to a specified destination AE.
+- [x] Implement **C-GET SCP** — pull-based retrieval within the same association.
+- [x] Implement **C-FIND SCU**, **C-MOVE SCU**, **C-GET SCU** — for federated queries and upstream retrieval.
+- [x] Optimise query performance with database indexing strategies.
+- [x] Support query result pagination for large result sets.
+- [x] Write conformance tests against DICOM query/retrieve test suites.
 
 ---
 
@@ -303,8 +303,8 @@ This document defines the phased roadmap for Mayam. Each milestone is a self-con
 | 1 | Project Bootstrap & Core Infrastructure | ✅ Complete | SPM workspace, CI, architecture foundations |
 | 2 | DICOM Association & Verification | ✅ Complete | C-ECHO SCP/SCU, TCP association handling |
 | 3 | Storage Service | ✅ Complete | C-STORE SCP/SCU, on-disk archive, metadata DB (PostgreSQL 18.3 primary; SwiftData/CoreData macOS embedded; SQLite Linux embedded), store-as-received, serve-as-stored, ZIP/TAR+Zstd packaging, storage policy matrix, Delete Protect & Privacy Flag |
-| 4 | Image Codec Integration | 🔲 Not Started | J2KSwift, JLSwift, JXLSwift, OpenJP3D, compressed copy on receipt, unified object presentation, representation model |
-| 5 | Query/Retrieve Services | 🔲 Not Started | C-FIND, C-MOVE, C-GET SCP/SCU |
+| 4 | Image Codec Integration | ✅ Complete | J2KSwift, JLSwift, JXLSwift, OpenJP3D, compressed copy on receipt, unified object presentation, representation model |
+| 5 | Query/Retrieve Services | ✅ Complete | C-FIND, C-MOVE, C-GET SCP/SCU, query performance indexes |
 | 6 | DICOMweb Services | 🔲 Not Started | WADO-RS, QIDO-RS, STOW-RS, UPS-RS |
 | 7 | Web Administration Console | 🔲 Not Started | Admin REST API, responsive web UI, setup wizard |
 | 8 | User Management & LDAP | 🔲 Not Started | LDAP auth, RBAC, DICOM LDAP configuration |

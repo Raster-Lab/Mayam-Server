@@ -6,8 +6,8 @@ import DICOMNetwork
 
 /// A protocol for DICOM Service Class Provider (SCP) service handlers.
 ///
-/// Each conforming type handles a specific DIMSE service (e.g. C-ECHO, C-STORE)
-/// for a set of supported SOP Class UIDs.
+/// Each conforming type handles a specific DIMSE service (e.g. C-ECHO, C-STORE,
+/// C-FIND, C-MOVE, C-GET) for a set of supported SOP Class UIDs.
 ///
 /// Reference: DICOM PS3.4
 public protocol SCPService: Sendable {
@@ -83,6 +83,15 @@ public final class SCPDispatcher: Sendable {
     /// The Storage SCP (C-STORE) handler — present when storage is configured.
     private let storageSCP: StorageSCP?
 
+    /// The Query/Retrieve SCP (C-FIND) handler — present when Q/R is configured.
+    private let queryRetrieveSCP: QueryRetrieveSCP?
+
+    /// The Retrieve SCP (C-MOVE) handler — present when retrieval is configured.
+    private let retrieveSCP: RetrieveSCP?
+
+    /// The Get SCP (C-GET) handler — present when get retrieval is configured.
+    private let getSCP: GetSCP?
+
     // MARK: - Initialiser
 
     /// Creates a new SCP dispatcher.
@@ -91,9 +100,21 @@ public final class SCPDispatcher: Sendable {
     ///   - services: Additional SCP service handlers to register.
     ///     The Verification SCP is always included automatically.
     ///   - storageSCP: Optional Storage SCP for handling C-STORE requests.
-    public init(services: [SCPService] = [], storageSCP: StorageSCP? = nil) {
+    ///   - queryRetrieveSCP: Optional Query/Retrieve SCP for handling C-FIND requests.
+    ///   - retrieveSCP: Optional Retrieve SCP for handling C-MOVE requests.
+    ///   - getSCP: Optional Get SCP for handling C-GET requests.
+    public init(
+        services: [SCPService] = [],
+        storageSCP: StorageSCP? = nil,
+        queryRetrieveSCP: QueryRetrieveSCP? = nil,
+        retrieveSCP: RetrieveSCP? = nil,
+        getSCP: GetSCP? = nil
+    ) {
         self.verificationSCP = VerificationSCP()
         self.storageSCP = storageSCP
+        self.queryRetrieveSCP = queryRetrieveSCP
+        self.retrieveSCP = retrieveSCP
+        self.getSCP = getSCP
         self.services = services
     }
 
@@ -140,6 +161,103 @@ public final class SCPDispatcher: Sendable {
             affectedSOPInstanceUID: request.affectedSOPInstanceUID,
             status: .failedUnableToProcess,
             presentationContextID: presentationContextID
+        )
+    }
+
+    /// Handles an incoming C-FIND request.
+    ///
+    /// Routes to the configured ``QueryRetrieveSCP`` if present; otherwise
+    /// returns a failure response.
+    ///
+    /// - Parameters:
+    ///   - request: The decoded C-FIND request.
+    ///   - identifier: The query identifier data set.
+    ///   - presentationContextID: The negotiated presentation context ID.
+    /// - Returns: An array of C-FIND responses (pending matches + final status).
+    public func handleCFind(
+        request: CFindRequest,
+        identifier: Data,
+        presentationContextID: UInt8
+    ) async -> [(response: CFindResponse, dataSet: Data?)] {
+        if let scp = queryRetrieveSCP {
+            return await scp.handleCFind(
+                request: request,
+                identifier: identifier,
+                presentationContextID: presentationContextID
+            )
+        }
+        return [(
+            response: CFindResponse(
+                messageIDBeingRespondedTo: request.messageID,
+                affectedSOPClassUID: request.affectedSOPClassUID,
+                status: .failedUnableToProcess,
+                hasDataSet: false,
+                presentationContextID: presentationContextID
+            ),
+            dataSet: nil
+        )]
+    }
+
+    /// Handles an incoming C-MOVE request.
+    ///
+    /// Routes to the configured ``RetrieveSCP`` if present; otherwise returns
+    /// a failure response.
+    ///
+    /// - Parameters:
+    ///   - request: The decoded C-MOVE request.
+    ///   - identifier: The query identifier data set.
+    ///   - presentationContextID: The negotiated presentation context ID.
+    /// - Returns: An array of C-MOVE responses tracking sub-operation progress.
+    public func handleCMove(
+        request: CMoveRequest,
+        identifier: Data,
+        presentationContextID: UInt8
+    ) async -> [CMoveResponse] {
+        if let scp = retrieveSCP {
+            return await scp.handleCMove(
+                request: request,
+                identifier: identifier,
+                presentationContextID: presentationContextID
+            )
+        }
+        return [CMoveResponse(
+            messageIDBeingRespondedTo: request.messageID,
+            affectedSOPClassUID: request.affectedSOPClassUID,
+            status: .failedUnableToProcess,
+            presentationContextID: presentationContextID
+        )]
+    }
+
+    /// Handles an incoming C-GET request.
+    ///
+    /// Routes to the configured ``GetSCP`` if present; otherwise returns
+    /// a failure response.
+    ///
+    /// - Parameters:
+    ///   - request: The decoded C-GET request.
+    ///   - identifier: The query identifier data set.
+    ///   - presentationContextID: The negotiated presentation context ID.
+    /// - Returns: A tuple containing C-GET responses and data sets for C-STORE sub-operations.
+    public func handleCGet(
+        request: CGetRequest,
+        identifier: Data,
+        presentationContextID: UInt8
+    ) async -> (responses: [CGetResponse], dataSets: [(sopClassUID: String, sopInstanceUID: String, transferSyntaxUID: String, data: Data)]) {
+        if let scp = getSCP {
+            return await scp.handleCGet(
+                request: request,
+                identifier: identifier,
+                presentationContextID: presentationContextID
+            )
+        }
+        return (
+            responses: [CGetResponse(
+                messageIDBeingRespondedTo: request.messageID,
+                affectedSOPClassUID: request.affectedSOPClassUID,
+                status: .failedUnableToProcess,
+                presentationContextID: presentationContextID
+            )],
+            dataSets: []
         )
     }
 }

@@ -59,11 +59,22 @@ public struct DICOMListenerConfiguration: Sendable, Equatable {
 
     /// Default SOP Classes accepted by the server.
     ///
-    /// Includes the Verification SOP Class (C-ECHO) and all common Storage
-    /// SOP Classes (C-STORE) defined by `DICOMNetwork.StorageSCPConfiguration`.
+    /// Includes the Verification SOP Class (C-ECHO), all common Storage
+    /// SOP Classes (C-STORE) defined by `DICOMNetwork.StorageSCPConfiguration`,
+    /// and the Query/Retrieve SOP Classes (C-FIND, C-MOVE, C-GET) for both
+    /// Patient Root and Study Root information models.
     public static let defaultAcceptedSOPClasses: Set<String> = {
         var classes = StorageSCPConfiguration.commonStorageSOPClasses
         classes.insert(verificationSOPClassUID)  // "1.2.840.10008.1.1"
+        // Query/Retrieve — C-FIND
+        classes.insert(patientRootQueryRetrieveFindSOPClassUID)
+        classes.insert(studyRootQueryRetrieveFindSOPClassUID)
+        // Query/Retrieve — C-MOVE
+        classes.insert(patientRootQueryRetrieveMoveSOPClassUID)
+        classes.insert(studyRootQueryRetrieveMoveSOPClassUID)
+        // Query/Retrieve — C-GET
+        classes.insert(patientRootQueryRetrieveGetSOPClassUID)
+        classes.insert(studyRootQueryRetrieveGetSOPClassUID)
         return classes
     }()
 

@@ -336,7 +336,8 @@ Mayam/
 │   │   ├── Database/
 │   │   │   └── Migrations/   # PostgreSQL schema migrations
 │   │   ├── DICOM/            # DICOM networking (NIO listener, association, SCP/SCU)
-│   │   │                     # Includes StorageSCP (C-STORE receiver) and StorageSCU (C-STORE sender)
+│   │   │                     # Includes StorageSCP (C-STORE), QueryRetrieveSCP (C-FIND),
+│   │   │                     # RetrieveSCP (C-MOVE), GetSCP (C-GET), and corresponding SCU clients
 │   │   ├── Logging/          # Cross-platform logging subsystem
 │   │   ├── Models/           # Patient, Study, Accession, Series, Instance, StoragePolicy,
 │   │   │                     # Representation, RepresentationPolicy, etc.

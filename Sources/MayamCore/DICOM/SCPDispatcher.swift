@@ -96,6 +96,14 @@ public final class SCPDispatcher: Sendable {
     /// present when storage commitment is configured.
     private let storageCommitmentSCP: StorageCommitmentSCP?
 
+    /// The Modality Worklist SCP (C-FIND) handler — present when
+    /// worklist is configured.
+    private let modalityWorklistSCP: ModalityWorklistSCP?
+
+    /// The MPPS SCP (N-CREATE/N-SET) handler — present when MPPS
+    /// is configured.
+    private let mppsSCP: MPPSSCP?
+
     // MARK: - Initialiser
 
     /// Creates a new SCP dispatcher.
@@ -109,13 +117,18 @@ public final class SCPDispatcher: Sendable {
     ///   - getSCP: Optional Get SCP for handling C-GET requests.
     ///   - storageCommitmentSCP: Optional Storage Commitment SCP for handling
     ///     N-ACTION/N-EVENT-REPORT requests.
+    ///   - modalityWorklistSCP: Optional Modality Worklist SCP for handling
+    ///     MWL C-FIND requests.
+    ///   - mppsSCP: Optional MPPS SCP for handling N-CREATE/N-SET requests.
     public init(
         services: [SCPService] = [],
         storageSCP: StorageSCP? = nil,
         queryRetrieveSCP: QueryRetrieveSCP? = nil,
         retrieveSCP: RetrieveSCP? = nil,
         getSCP: GetSCP? = nil,
-        storageCommitmentSCP: StorageCommitmentSCP? = nil
+        storageCommitmentSCP: StorageCommitmentSCP? = nil,
+        modalityWorklistSCP: ModalityWorklistSCP? = nil,
+        mppsSCP: MPPSSCP? = nil
     ) {
         self.verificationSCP = VerificationSCP()
         self.storageSCP = storageSCP
@@ -123,6 +136,8 @@ public final class SCPDispatcher: Sendable {
         self.retrieveSCP = retrieveSCP
         self.getSCP = getSCP
         self.storageCommitmentSCP = storageCommitmentSCP
+        self.modalityWorklistSCP = modalityWorklistSCP
+        self.mppsSCP = mppsSCP
         self.services = services
     }
 

@@ -306,6 +306,99 @@ public final class DICOMAssociationHandler: ChannelInboundHandler, @unchecked Se
                 }
             }
 
+        case .cFindRequest:
+            if let request = message.asCFindRequest() {
+                let identifier = message.dataSet ?? Data()
+                let maxPDU = negotiatedMaxPDUSize
+                let channel = context.channel
+                Task {
+                    let responses = await self.dispatcher.handleCFind(
+                        request: request,
+                        identifier: identifier,
+                        presentationContextID: contextID
+                    )
+                    channel.eventLoop.execute {
+                        let fragmenter = MessageFragmenter(maxPDUSize: maxPDU)
+                        for (response, dataSet) in responses {
+                            let pdus = fragmenter.fragmentMessage(
+                                commandSet: response.commandSet,
+                                dataSet: dataSet,
+                                presentationContextID: contextID
+                            )
+                            for pdu in pdus {
+                                if let encoded = try? pdu.encode() {
+                                    var outBuffer = channel.allocator.buffer(capacity: encoded.count)
+                                    outBuffer.writeBytes(encoded)
+                                    channel.writeAndFlush(outBuffer, promise: nil)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        case .cMoveRequest:
+            if let request = message.asCMoveRequest() {
+                let identifier = message.dataSet ?? Data()
+                let maxPDU = negotiatedMaxPDUSize
+                let channel = context.channel
+                Task {
+                    let responses = await self.dispatcher.handleCMove(
+                        request: request,
+                        identifier: identifier,
+                        presentationContextID: contextID
+                    )
+                    channel.eventLoop.execute {
+                        let fragmenter = MessageFragmenter(maxPDUSize: maxPDU)
+                        for response in responses {
+                            let pdus = fragmenter.fragmentMessage(
+                                commandSet: response.commandSet,
+                                dataSet: nil,
+                                presentationContextID: contextID
+                            )
+                            for pdu in pdus {
+                                if let encoded = try? pdu.encode() {
+                                    var outBuffer = channel.allocator.buffer(capacity: encoded.count)
+                                    outBuffer.writeBytes(encoded)
+                                    channel.writeAndFlush(outBuffer, promise: nil)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        case .cGetRequest:
+            if let request = message.asCGetRequest() {
+                let identifier = message.dataSet ?? Data()
+                let maxPDU = negotiatedMaxPDUSize
+                let channel = context.channel
+                Task {
+                    let result = await self.dispatcher.handleCGet(
+                        request: request,
+                        identifier: identifier,
+                        presentationContextID: contextID
+                    )
+                    channel.eventLoop.execute {
+                        let fragmenter = MessageFragmenter(maxPDUSize: maxPDU)
+                        for response in result.responses {
+                            let pdus = fragmenter.fragmentMessage(
+                                commandSet: response.commandSet,
+                                dataSet: nil,
+                                presentationContextID: contextID
+                            )
+                            for pdu in pdus {
+                                if let encoded = try? pdu.encode() {
+                                    var outBuffer = channel.allocator.buffer(capacity: encoded.count)
+                                    outBuffer.writeBytes(encoded)
+                                    channel.writeAndFlush(outBuffer, promise: nil)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
         default:
             logger.warning("Unsupported DIMSE command: \(command)")
         }

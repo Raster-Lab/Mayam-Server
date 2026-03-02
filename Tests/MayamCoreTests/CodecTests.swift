@@ -884,6 +884,84 @@ final class CompressedCopyManagerTests: XCTestCase {
         XCTAssertNotNil(best)
         XCTAssertEqual(best?.transferSyntaxUID, "1.2.840.10008.1.2")
     }
+
+    func test_compressedCopyManager_createCompressedCopy_sourceSameAsTarget_returnsNil() async throws {
+        let service = ImageCodecService(logger: makeLogger())
+        let policy = RepresentationPolicy(
+            compressedCopyOnReceipt: true,
+            defaultCompressedCopySyntaxUID: "1.2.840.10008.1.2.4.90"
+        )
+        let manager = CompressedCopyManager(codecService: service, policy: policy, logger: makeLogger())
+
+        // Source is already in the target syntax — no copy needed
+        let result = try await manager.createCompressedCopyOnReceipt(
+            pixelData: Data([0x00, 0x01]),
+            sourceTransferSyntaxUID: "1.2.840.10008.1.2.4.90",
+            sopInstanceUID: "1.2.3.4",
+            sopClassUID: "1.2.840.10008.5.1.4.1.1.2",
+            imageParameters: ImageParameters()
+        )
+        XCTAssertNil(result)
+    }
+
+    func test_compressedCopyManager_createCompressedCopy_derivativeLimitReached_returnsNil() async throws {
+        let service = ImageCodecService(logger: makeLogger())
+        let policy = RepresentationPolicy(
+            compressedCopyOnReceipt: true,
+            derivativeLimit: 1
+        )
+        let manager = CompressedCopyManager(codecService: service, policy: policy, logger: makeLogger())
+
+        // Register one representation — at the limit (1)
+        let rep = Representation(
+            sopInstanceUID: "1.2.3.5",
+            sopClassUID: "1.2.840.10008.5.1.4.1.1.2",
+            transferSyntaxUID: "1.2.840.10008.1.2",
+            filePath: "test.dcm",
+            fileSizeBytes: 100
+        )
+        await manager.registerOriginal(rep)
+
+        // Try to create a compressed copy — should be blocked by limit
+        let result = try await manager.createCompressedCopyOnReceipt(
+            pixelData: Data([0x00]),
+            sourceTransferSyntaxUID: "1.2.840.10008.1.2",
+            sopInstanceUID: "1.2.3.5",
+            sopClassUID: "1.2.840.10008.5.1.4.1.1.2",
+            imageParameters: ImageParameters()
+        )
+        XCTAssertNil(result)
+    }
+
+    func test_compressedCopyManager_selectBestRepresentation_unknownUID_returnsNil() async {
+        let service = ImageCodecService(logger: makeLogger())
+        let manager = CompressedCopyManager(codecService: service, logger: makeLogger())
+        let best = await manager.selectBestRepresentation(
+            for: "unknown.uid",
+            clientAcceptedUIDs: ["1.2.840.10008.1.2"]
+        )
+        XCTAssertNil(best)
+    }
+
+    func test_compressedCopyManager_enqueueBatchTranscoding_multipleJobs() async {
+        let service = ImageCodecService(logger: makeLogger())
+        let manager = CompressedCopyManager(codecService: service, logger: makeLogger())
+        await manager.enqueueBatchTranscoding(
+            studyInstanceUID: "1.2.3",
+            targetSyntaxUID: "1.2.840.10008.1.2.4.90",
+            imageParameters: ImageParameters()
+        )
+        await manager.enqueueBatchTranscoding(
+            studyInstanceUID: "1.2.4",
+            targetSyntaxUID: "1.2.840.10008.1.2.4.80",
+            imageParameters: ImageParameters()
+        )
+        let count = await manager.pendingJobCount()
+        XCTAssertEqual(count, 2)
+        let jobs = await manager.getPendingJobs()
+        XCTAssertEqual(jobs[0].studyInstanceUID, "1.2.3")
+        XCTAssertEqual(jobs[1].studyInstanceUID, "1.2.4")
+    }
 }
 
 // MARK: - BatchTranscodingJob Tests

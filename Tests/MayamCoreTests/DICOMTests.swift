@@ -524,30 +524,10 @@ final class CEchoIntegrationTests: XCTestCase {
 
         try await listener.start()
 
-        // Get the actual bound port from the listener
-        // Since we can't easily get the bound port from our current API,
-        // we'll use a fixed port for this test
-        await listener.stop()
-        try await eventLoopGroup.shutdownGracefully()
-    }
-
-    func test_cEchoSCPSCU_withFixedPort_succeeds() async throws {
-        // Use a specific port for the integration test
-        let testPort = 19104
-        let config = DICOMListenerConfiguration(aeTitle: "TEST_SCP", port: testPort)
-        let logger = Logger(label: "test.integration")
-        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
-
-        let listener = DICOMListener(
-            configuration: config,
-            logger: logger,
-            eventLoopGroup: eventLoopGroup
-        )
-
-        do {
-            try await listener.start()
-        } catch {
-            // Port might be in use; skip this test
+        // Get the actual bound port
+        guard let actualPort = await listener.localPort() else {
+            XCTFail("Failed to get bound port")
+            await listener.stop()
             try await eventLoopGroup.shutdownGracefully()
             return
         }
@@ -555,33 +535,28 @@ final class CEchoIntegrationTests: XCTestCase {
         // Now perform a C-ECHO SCU against the running SCP
         let scu = VerificationSCU(logger: logger)
 
-        do {
-            let result = try await scu.echo(
-                host: "127.0.0.1",
-                port: testPort,
-                callingAE: "TEST_SCU",
-                calledAE: "TEST_SCP",
-                timeout: 10
-            )
+        let result = try await scu.echo(
+            host: "127.0.0.1",
+            port: actualPort,
+            callingAE: "TEST_SCU",
+            calledAE: "TEST_SCP",
+            timeout: 10
+        )
 
-            XCTAssertTrue(result.success, "C-ECHO should succeed against local SCP")
-            XCTAssertEqual(result.remoteAETitle, "TEST_SCP")
-            XCTAssertEqual(result.host, "127.0.0.1")
-            XCTAssertEqual(result.port, testPort)
-            XCTAssertGreaterThan(result.roundTripTime, 0)
-        } catch {
-            // C-ECHO may fail in CI environments — log but don't fail
-            print("C-ECHO integration test skipped due to: \(error)")
-        }
+        XCTAssertTrue(result.success, "C-ECHO should succeed against local SCP")
+        XCTAssertEqual(result.remoteAETitle, "TEST_SCP")
+        XCTAssertEqual(result.host, "127.0.0.1")
+        XCTAssertEqual(result.port, actualPort)
+        XCTAssertGreaterThan(result.roundTripTime, 0)
 
         // Clean up
         await listener.stop()
         try await eventLoopGroup.shutdownGracefully()
     }
 
-    func test_cEchoSCU_wrongCalledAE_getsRejected() async throws {
-        let testPort = 19105
-        let config = DICOMListenerConfiguration(aeTitle: "REAL_AE", port: testPort)
+    func test_cEchoSCPSCU_withFixedPort_succeeds() async throws {
+        // Use an ephemeral port for the integration test
+        let config = DICOMListenerConfiguration(aeTitle: "TEST_SCP", port: 0)
         let logger = Logger(label: "test.integration")
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
 
@@ -591,9 +566,53 @@ final class CEchoIntegrationTests: XCTestCase {
             eventLoopGroup: eventLoopGroup
         )
 
-        do {
-            try await listener.start()
-        } catch {
+        try await listener.start()
+
+        guard let testPort = await listener.localPort() else {
+            XCTFail("Failed to get bound port")
+            await listener.stop()
+            try await eventLoopGroup.shutdownGracefully()
+            return
+        }
+
+        // Now perform a C-ECHO SCU against the running SCP
+        let scu = VerificationSCU(logger: logger)
+
+        let result = try await scu.echo(
+            host: "127.0.0.1",
+            port: testPort,
+            callingAE: "TEST_SCU",
+            calledAE: "TEST_SCP",
+            timeout: 10
+        )
+
+        XCTAssertTrue(result.success, "C-ECHO should succeed against local SCP")
+        XCTAssertEqual(result.remoteAETitle, "TEST_SCP")
+        XCTAssertEqual(result.host, "127.0.0.1")
+        XCTAssertEqual(result.port, testPort)
+        XCTAssertGreaterThan(result.roundTripTime, 0)
+
+        // Clean up
+        await listener.stop()
+        try await eventLoopGroup.shutdownGracefully()
+    }
+
+    func test_cEchoSCU_wrongCalledAE_getsRejected() async throws {
+        let config = DICOMListenerConfiguration(aeTitle: "REAL_AE", port: 0)
+        let logger = Logger(label: "test.integration")
+        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
+
+        let listener = DICOMListener(
+            configuration: config,
+            logger: logger,
+            eventLoopGroup: eventLoopGroup
+        )
+
+        try await listener.start()
+
+        guard let testPort = await listener.localPort() else {
+            XCTFail("Failed to get bound port")
+            await listener.stop()
             try await eventLoopGroup.shutdownGracefully()
             return
         }

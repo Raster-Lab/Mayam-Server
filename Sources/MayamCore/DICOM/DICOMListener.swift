@@ -146,6 +146,16 @@ public actor DICOMListener {
         serverChannel?.isActive ?? false
     }
 
+    /// Returns the actual bound port number.
+    ///
+    /// Useful when binding to port `0` to discover the ephemeral port assigned
+    /// by the operating system.
+    ///
+    /// - Returns: The bound port, or `nil` if the listener is not active.
+    public func localPort() -> Int? {
+        serverChannel?.localAddress?.port
+    }
+
     // MARK: - TLS Configuration
 
     /// Creates a NIO SSL context if TLS is enabled.

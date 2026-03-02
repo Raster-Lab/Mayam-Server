@@ -17,6 +17,10 @@ import Logging
 /// 4. Handles A-RELEASE-RQ/RP and A-ABORT.
 ///
 /// Reference: DICOM PS3.8 Section 9
+///
+/// > Concurrency: This handler is marked `@unchecked Sendable` because all
+/// > mutable state is accessed exclusively on the NIO `EventLoop` thread
+/// > associated with the channel, as guaranteed by the NIO threading model.
 public final class DICOMAssociationHandler: ChannelInboundHandler, @unchecked Sendable {
     public typealias InboundIn = ByteBuffer
     public typealias OutboundOut = ByteBuffer

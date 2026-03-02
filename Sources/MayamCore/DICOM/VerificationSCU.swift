@@ -158,6 +158,12 @@ extension VerificationSCUResult: CustomStringConvertible {
 ///
 /// Performs the outbound association negotiation, sends a C-ECHO request,
 /// processes the response, and releases the association.
+///
+/// > Concurrency: This handler is marked `@unchecked Sendable` because all
+/// > mutable state is accessed exclusively on the NIO `EventLoop` thread
+/// > associated with the channel, as guaranteed by the NIO threading model.
+/// > The `resultContinuation` is set once before channel activation and
+/// > resumed exactly once from the EventLoop.
 final class VerificationSCUHandler: ChannelInboundHandler, @unchecked Sendable {
     typealias InboundIn = ByteBuffer
     typealias OutboundOut = ByteBuffer
@@ -201,7 +207,7 @@ final class VerificationSCUHandler: ChannelInboundHandler, @unchecked Sendable {
         var buffer = Self.unwrapInboundIn(data)
 
         guard let pduTypeByte = buffer.getInteger(at: buffer.readerIndex, as: UInt8.self) else {
-            completeWithError(DICOMListenerError.bindFailed(port: 0, underlying: VerificationSCUError.invalidResponse))
+            completeWithError(VerificationSCUError.invalidResponse)
             context.close(promise: nil)
             return
         }

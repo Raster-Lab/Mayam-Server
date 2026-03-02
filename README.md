@@ -316,7 +316,7 @@ Mayam Server uses **Swift structured concurrency** with an actor-based architect
 - **`ServerActor`** — top-level coordinator; owns the DICOM listener lifecycle, manages association actors, and coordinates storage.
 - **`DICOMListener`** — Swift NIO TCP listener; accepts inbound DICOM associations and creates a `DICOMAssociationHandler` per connection with PDU framing, optional TLS 1.3, and DIMSE command dispatch.
 - **`DICOMAssociationHandler`** — NIO channel handler; implements the DICOM Upper Layer Protocol (A-ASSOCIATE negotiation, P-DATA transfer, A-RELEASE, A-ABORT) and routes DIMSE commands to SCP service handlers via `SCPDispatcher`.
-- **`AssociationActor`** — one per active DICOM association; handles the Upper Layer Protocol state machine (A-ASSOCIATE, P-DATA, A-RELEASE, A-ABORT).
+- **`AssociationActor`** — per-association concurrency-safe skeleton; tracks association state and identifiers.
 - **`StorageActor`** — singleton; serialises archive writes, computes checksums, and enforces store-as-received semantics.
 - **`ConfigurationLoader`** — loads YAML configuration with environment variable overrides.
 - **`MayamLogger`** — cross-platform logging via `swift-log` (integrates with `os_log` on macOS).

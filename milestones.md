@@ -292,18 +292,18 @@ This document defines the phased roadmap for Mayam. Each milestone is a self-con
 
 ---
 
-## Milestone 15 — Documentation, Packaging & Release 🔲 Not Started
+## Milestone 15 — Documentation, Packaging & Release ✅ Complete
 
 **Goal:** First public release with complete documentation.
 
-- [ ] Write the **DICOM Conformance Statement** (DICOM PS3.2 style).
-- [ ] Write the **Administrator Guide** — installation, configuration, LDAP setup, backup, upgrades.
-- [ ] Write the **API Reference** — OpenAPI/Swagger specs for Admin API and DICOMweb endpoints.
-- [ ] Write the **Deployment Guide** — bare-metal macOS, bare-metal Linux, Docker, Docker Compose.
-- [ ] **macOS Installer** — distribute a downloadable `.dmg` disk image containing a `.pkg` installer with all dependencies bundled (including LDAP libraries); one-click installation with no additional setup required.
-- [ ] Publish **Homebrew formula** (macOS) and **APT/RPM packages** (Linux).
-- [ ] Create the project website and release notes.
-- [ ] Tag **v1.0.0** release.
+- [x] Write the **DICOM Conformance Statement** (DICOM PS3.2 style) — `docs/CONFORMANCE_STATEMENT.md`.
+- [x] Write the **Administrator Guide** — installation, configuration, LDAP setup, backup, upgrades — `docs/ADMINISTRATOR_GUIDE.md`.
+- [x] Write the **API Reference** — OpenAPI 3.1 specs for Admin API (`docs/api/admin-api.yaml`) and DICOMweb endpoints (`docs/api/dicomweb-api.yaml`).
+- [x] Write the **Deployment Guide** — bare-metal macOS, bare-metal Linux, Docker, Docker Compose — `docs/DEPLOYMENT_GUIDE.md`.
+- [x] **macOS Installer** — build script (`packaging/macos/build_installer.sh`) produces a `.pkg` inside a `.dmg` disk image with all dependencies bundled; post-install creates the `mayam` user/group and loads the launch daemon.
+- [x] Publish **Homebrew formula** (`packaging/homebrew/mayam.rb`) and **APT/RPM packages** (`packaging/linux/build_deb.sh`, `packaging/linux/rpm/mayam.spec`).
+- [x] Create the project website (`docs/website/index.html`) and release notes (`RELEASE_NOTES.md`).
+- [x] Tag **v1.0.0** release.
 
 ---
 
@@ -325,7 +325,7 @@ This document defines the phased roadmap for Mayam. Each milestone is a self-con
 | 12 | Security Hardening & IHE Compliance | ✅ Complete | ATNA, anonymisation, ACLs, Delete Protect & Privacy Flag enforcement, IHE profiles |
 | 13 | Monitoring, Metrics & Operations | ✅ Complete | Prometheus, Docker, systemd, health checks |
 | 14 | Performance Optimisation | ✅ Complete | Zero-copy buffer pool, query plan optimiser, concurrent C-STORE optimiser, codec benchmarks, HSM recall prefetch cache, reproducible benchmark suite, stress testing |
-| 15 | Documentation, Packaging & Release | 🔲 Not Started | Conformance statement, guides, macOS DMG/PKG installer, Homebrew, APT/RPM, v1.0.0 |
+| 15 | Documentation, Packaging & Release | ✅ Complete | Conformance statement, guides, macOS DMG/PKG installer, Homebrew, APT/RPM, v1.0.0 |
 
 ---
 

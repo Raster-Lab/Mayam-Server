@@ -405,15 +405,53 @@ Mayam/
 │   ├── MayamCoreTests/       # Core unit tests (including WorkflowTests)
 │   └── MayamWebTests/        # Web layer tests
 ├── Config/
-│   └── mayam.yaml            # Default configuration
+│   ├── mayam.yaml            # Default configuration
+│   ├── mayam.service          # systemd service unit (Linux)
+│   ├── com.raster-lab.mayam.plist  # launchd plist (macOS)
+│   ├── prometheus.yml         # Prometheus scrape configuration
+│   └── grafana-dashboard.json # Grafana dashboard definition
+├── docs/
+│   ├── CONFORMANCE_STATEMENT.md  # DICOM PS3.2 Conformance Statement
+│   ├── ADMINISTRATOR_GUIDE.md    # Installation, configuration & operations guide
+│   ├── DEPLOYMENT_GUIDE.md       # Bare-metal, Docker & Docker Compose deployment
+│   ├── api/
+│   │   ├── admin-api.yaml        # OpenAPI 3.1 spec — Admin REST API
+│   │   └── dicomweb-api.yaml     # OpenAPI 3.1 spec — DICOMweb & FHIR API
+│   └── website/
+│       └── index.html            # Project website (static single-page)
+├── packaging/
+│   ├── macos/
+│   │   ├── build_installer.sh    # Build .pkg inside .dmg
+│   │   ├── Distribution.xml      # productbuild distribution descriptor
+│   │   └── scripts/postinstall   # Post-install hook (create user, load daemon)
+│   ├── homebrew/
+│   │   └── mayam.rb              # Homebrew formula
+│   └── linux/
+│       ├── build_deb.sh          # Build .deb package
+│       └── rpm/mayam.spec        # RPM spec file
 ├── .github/
 │   └── workflows/
 │       └── ci.yml            # CI for macOS + Linux
 ├── Package.swift
 ├── README.md
+├── RELEASE_NOTES.md          # v1.0.0 release notes
 ├── COMPLIANCE.md             # GDPR & HIPAA compliance configuration guide
 └── milestones.md
 ```
+
+---
+
+## Documentation
+
+| Document | Description |
+|---|---|
+| [DICOM Conformance Statement](docs/CONFORMANCE_STATEMENT.md) | DICOM PS3.2-style conformance statement — SOP classes, transfer syntaxes, networking, security |
+| [Administrator Guide](docs/ADMINISTRATOR_GUIDE.md) | Installation, configuration, LDAP setup, backup, upgrades, troubleshooting |
+| [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) | Bare-metal macOS/Linux, Docker, Docker Compose deployment instructions |
+| [Admin API Reference](docs/api/admin-api.yaml) | OpenAPI 3.1 specification for the Admin REST API (port 8081) |
+| [DICOMweb API Reference](docs/api/dicomweb-api.yaml) | OpenAPI 3.1 specification for DICOMweb, FHIR, health & metrics endpoints (port 8080) |
+| [GDPR & HIPAA Compliance](COMPLIANCE.md) | Compliance configuration guide for healthcare data protection regulations |
+| [Release Notes](RELEASE_NOTES.md) | Release notes for v1.0.0 |
 
 ---
 

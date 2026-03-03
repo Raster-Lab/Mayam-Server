@@ -184,15 +184,15 @@ This document defines the phased roadmap for Mayam. Each milestone is a self-con
 
 ---
 
-## Milestone 10 — Worklist, MPPS & Workflow 🔲 Not Started
+## Milestone 10 — Worklist, MPPS & Workflow ✅ Complete
 
 **Goal:** Support modality worklist, procedure tracking, and RIS-friendly notification APIs for clinical workflow.
 
-- [ ] Implement **Modality Worklist (MWL) SCP** — serve scheduled procedure step information to modalities.
-- [ ] Implement **Modality Performed Procedure Step (MPPS) SCP** — receive procedure status (in-progress, completed, discontinued).
-- [ ] Implement **Instance Availability Notification (IAN)** — notify downstream systems (including RIS) when studies become available, both as a DICOM service and as a RESTful API.
-- [ ] Implement **IAN-Style REST APIs for RIS Integration** — RESTful endpoints that mirror IAN semantics, enabling RIS and other non-DICOM systems to subscribe to study-available, study-updated, and study-archived events via webhooks or polling.
-- [ ] Define and implement the **RIS Event Catalog** — the full set of lifecycle events published via DICOM IAN and RESTful webhooks:
+- [x] Implement **Modality Worklist (MWL) SCP** — serve scheduled procedure step information to modalities.
+- [x] Implement **Modality Performed Procedure Step (MPPS) SCP** — receive procedure status (in-progress, completed, discontinued).
+- [x] Implement **Instance Availability Notification (IAN)** — notify downstream systems (including RIS) when studies become available, both as a DICOM service and as a RESTful API.
+- [x] Implement **IAN-Style REST APIs for RIS Integration** — RESTful endpoints that mirror IAN semantics, enabling RIS and other non-DICOM systems to subscribe to study-available, study-updated, and study-archived events via webhooks or polling.
+- [x] Define and implement the **RIS Event Catalog** — the full set of lifecycle events published via DICOM IAN and RESTful webhooks:
   - `study.received` — first instance of a new study stored (payload: studyInstanceUID, accessionNumber, patientID, patientName, modality, studyDate, studyDescription?, receivingAE, sourceAE, timestamp).
   - `study.updated` — additional instances arrive for an existing study (payload: studyInstanceUID, accessionNumber, seriesCount, instanceCount, latestSeriesUID, sourceAE, timestamp).
   - `study.complete` — study completeness criteria met (payload: studyInstanceUID, accessionNumber, patientID, modality, seriesCount, instanceCount, studyStatus, timestamp).
@@ -203,8 +203,8 @@ This document defines the phased roadmap for Mayam. Each milestone is a self-con
   - `study.deleted` — study permanently removed (payload: studyInstanceUID, accessionNumber, patientID, deletionReason, deletedBy, timestamp).
   - `study.error` — processing error (payload: studyInstanceUID, accessionNumber, errorCode, errorMessage, stage, timestamp).
   - Webhook delivery via JSON/HTTPS POST with HMAC-SHA256 signatures (per-subscription shared secret with key rotation support), configurable retry with exponential back-off, and subscription management via the Admin API. Fields marked with `?` are nullable and may be absent when the triggering event occurs before the attribute is available.
-- [ ] Integrate with HL7 v2.x ORM/ORU messages via [HL7kit](https://github.com/Raster-Lab/HL7kit) for order-driven workflows.
-- [ ] Add worklist management screens to the web console.
+- [x] Integrate with HL7 v2.x ORM/ORU messages via [HL7kit](https://github.com/Raster-Lab/HL7kit) for order-driven workflows.
+- [x] Add worklist management screens to the web console.
 
 ---
 
@@ -313,7 +313,7 @@ This document defines the phased roadmap for Mayam. Each milestone is a self-con
 | 7 | Web Administration Console | ✅ Complete | Admin REST API (JWT auth, CRUD nodes, storage, logs, settings, setup wizard), responsive web console SPA |
 | 8 | User Management & LDAP | ✅ Complete | LDAP auth, RBAC, DICOM LDAP configuration |
 | 9 | Near-Line Storage & Backup | 🔲 Not Started | HSM, storage commitment, backup & recovery |
-| 10 | Worklist, MPPS & Workflow | 🔲 Not Started | MWL SCP, MPPS, IAN (DICOM + REST), RIS event catalog, webhook delivery |
+| 10 | Worklist, MPPS & Workflow | ✅ Complete | MWL SCP, MPPS, IAN (DICOM + REST), RIS event catalog, webhook delivery |
 | 11 | HL7 & FHIR Interoperability | 🔲 Not Started | HL7 v2.x MLLP (via HL7kit HL7v2Kit), FHIR R4 resources (via HL7kit FHIRkit); requires `ImagingStudy` & `Endpoint` additions to HL7kit |
 | 12 | Security Hardening & IHE Compliance | 🔲 Not Started | ATNA, anonymisation, ACLs, Delete Protect & Privacy Flag enforcement, IHE profiles |
 | 13 | Monitoring, Metrics & Operations | 🔲 Not Started | Prometheus, Docker, systemd, health checks |

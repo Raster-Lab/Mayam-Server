@@ -131,7 +131,10 @@ Leveraging Raster-Lab's native Swift codecs for best-in-class performance on App
 ### Administration & Configuration
 
 - **Responsive Web Console** — Modern HTML5/CSS/JS administration interface; mobile-friendly.
-- **RESTful Admin API** — Complete separation of UI and server; every admin function available via documented REST endpoints to enable future native GUI/App tools.
+- **RESTful Admin API** — Complete separation of UI and server; every admin function available via documented REST endpoints to enable future native GUI/App tools. Key endpoint groups include:
+  - `/admin/api/worklist` — Modality Worklist management (CRUD for scheduled procedure steps).
+  - `/admin/api/mpps` — MPPS instance monitoring (read-only; procedure steps created by modalities via DICOM N-CREATE/N-SET).
+  - `/admin/api/webhooks` — Webhook subscription management (CRUD for RIS event notification endpoints with HMAC-SHA256 signing).
 - **Setup Wizard** — Guided first-run configuration for AE Title, ports, storage paths, and network settings.
 - **LDAP Integration** — User authentication and authorisation via LDAP/Active Directory, following DICOM configuration standards (LDAP DICOM schema).
 - **Role-Based Access Control (RBAC)** — Predefined roles (Administrator, Technologist, Physician, Auditor) with customisable permissions.
@@ -367,17 +370,26 @@ Mayam/
 │   │   │   └── Migrations/   # PostgreSQL schema migrations
 │   │   ├── DICOM/            # DICOM networking (NIO listener, association, SCP/SCU)
 │   │   │                     # Includes StorageSCP (C-STORE), QueryRetrieveSCP (C-FIND),
-│   │   │                     # RetrieveSCP (C-MOVE), GetSCP (C-GET), and corresponding SCU clients
+│   │   │                     # RetrieveSCP (C-MOVE), GetSCP (C-GET), and corresponding SCU clients,
+│   │   │                     # ModalityWorklistSCP (MWL C-FIND), MPPSSCP (N-CREATE/N-SET),
+│   │   │                     # InstanceAvailabilityNotificationSCU (IAN), StorageCommitmentSCP
 │   │   ├── Logging/          # Cross-platform logging subsystem
 │   │   ├── Models/           # Patient, Study, Accession, Series, Instance, StoragePolicy,
-│   │   │                     # Representation, RepresentationPolicy, etc.
-│   │   └── Storage/          # StorageLayout (on-disk hierarchy), StudyArchiver (ZIP/TAR+Zstd),
-│   │                         # CompressedCopyManager (compressed copy on receipt, batch transcoding)
+│   │   │                     # Representation, RepresentationPolicy, ScheduledProcedureStep,
+│   │   │                     # PerformedProcedureStep, RISEvent, WebhookSubscription, etc.
+│   │   ├── Storage/          # StorageLayout (on-disk hierarchy), StudyArchiver (ZIP/TAR+Zstd),
+│   │   │                     # CompressedCopyManager (compressed copy on receipt, batch transcoding)
+│   │   └── Workflow/         # WorkflowEngine (RIS event catalogue + subscriptions),
+│   │                         # WebhookDeliveryService (HMAC-SHA256, exponential back-off),
+│   │                         # HL7WorkflowIntegration (ORM/ORU via HL7kit)
 │   ├── MayamWeb/             # DICOMweb & Admin REST API
+│   │   └── Admin/
+│   │       └── Handlers/     # AdminWorklistHandler (MWL CRUD), AdminMPPSHandler (MPPS read-only),
+│   │                         # AdminWebhookHandler (webhook subscription CRUD)
 │   ├── MayamAdmin/           # Web console static assets (single-page app served by AdminServer at /admin/)
 │   └── MayamCLI/             # Command-line administration tools
 ├── Tests/
-│   ├── MayamCoreTests/       # Core unit tests
+│   ├── MayamCoreTests/       # Core unit tests (including WorkflowTests)
 │   └── MayamWebTests/        # Web layer tests
 ├── Config/
 │   └── mayam.yaml            # Default configuration

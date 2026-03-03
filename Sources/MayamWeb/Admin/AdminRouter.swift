@@ -158,6 +158,9 @@ public struct AdminRouter: Sendable {
     private let setup: AdminSetupHandler
     private let users: AdminUserHandler
     private let ldap: AdminLDAPHandler
+    private let worklist: AdminWorklistHandler
+    private let mpps: AdminMPPSHandler
+    private let webhooks: AdminWebhookHandler
     private let archivePath: String
     private let hsmConfig: ServerConfiguration.HSM
     private let backupConfig: ServerConfiguration.Backup
@@ -176,6 +179,9 @@ public struct AdminRouter: Sendable {
     ///   - setup: Setup wizard handler.
     ///   - users: User management handler.
     ///   - ldap: LDAP configuration handler.
+    ///   - worklist: Modality Worklist (scheduled procedure steps) handler.
+    ///   - mpps: Modality Performed Procedure Step read-only handler.
+    ///   - webhooks: Webhook subscription management handler.
     ///   - archivePath: Root path of the DICOM archive (used for storage stats).
     ///   - hsmConfig: HSM configuration for tier management.
     ///   - backupConfig: Backup configuration for backup management.
@@ -189,6 +195,9 @@ public struct AdminRouter: Sendable {
         setup: AdminSetupHandler,
         users: AdminUserHandler = AdminUserHandler(userDirectory: UserDirectory()),
         ldap: AdminLDAPHandler = AdminLDAPHandler(),
+        worklist: AdminWorklistHandler = AdminWorklistHandler(),
+        mpps: AdminMPPSHandler = AdminMPPSHandler(),
+        webhooks: AdminWebhookHandler = AdminWebhookHandler(),
         archivePath: String,
         hsmConfig: ServerConfiguration.HSM = ServerConfiguration.HSM(),
         backupConfig: ServerConfiguration.Backup = ServerConfiguration.Backup()
@@ -202,6 +211,9 @@ public struct AdminRouter: Sendable {
         self.setup = setup
         self.users = users
         self.ldap = ldap
+        self.worklist = worklist
+        self.mpps = mpps
+        self.webhooks = webhooks
         self.archivePath = archivePath
         self.hsmConfig = hsmConfig
         self.backupConfig = backupConfig
@@ -430,6 +442,84 @@ public struct AdminRouter: Sendable {
         // GET /admin/api/backup
         if components == ["backup"] && method == .get {
             return try jsonResponse(await storage.getBackupStatus(backupConfig: backupConfig))
+        }
+
+        // MARK: Worklist routes
+
+        // GET /admin/api/worklist
+        if components == ["worklist"] && method == .get {
+            let statusFilter = request.queryParams["status"]
+                .flatMap { ScheduledProcedureStep.Status(rawValue: $0.uppercased()) }
+            return try jsonResponse(await worklist.listSteps(status: statusFilter))
+        }
+
+        // POST /admin/api/worklist
+        if components == ["worklist"] && method == .post {
+            let step: ScheduledProcedureStep = try decodeBody(request.body)
+            return try jsonResponse(try await worklist.createStep(step), statusCode: 201)
+        }
+
+        // GET /admin/api/worklist/{id}
+        if components.count == 2 && components[0] == "worklist" && method == .get {
+            return try jsonResponse(try await worklist.getStep(id: components[1]))
+        }
+
+        // PUT /admin/api/worklist/{id}
+        if components.count == 2 && components[0] == "worklist" && method == .put {
+            let step: ScheduledProcedureStep = try decodeBody(request.body)
+            return try jsonResponse(try await worklist.updateStep(step))
+        }
+
+        // DELETE /admin/api/worklist/{id}
+        if components.count == 2 && components[0] == "worklist" && method == .delete {
+            try await worklist.deleteStep(id: components[1])
+            return AdminResponse.noContent()
+        }
+
+        // MARK: MPPS routes (read-only)
+
+        // GET /admin/api/mpps
+        if components == ["mpps"] && method == .get {
+            let statusFilter = request.queryParams["status"]
+                .flatMap { PerformedProcedureStep.Status(rawValue: $0.uppercased()) }
+            return try jsonResponse(await mpps.listInstances(status: statusFilter))
+        }
+
+        // GET /admin/api/mpps/{uid}
+        if components.count == 2 && components[0] == "mpps" && method == .get {
+            return try jsonResponse(try await mpps.getInstance(uid: components[1]))
+        }
+
+        // MARK: Webhook subscription routes
+
+        // GET /admin/api/webhooks
+        if components == ["webhooks"] && method == .get {
+            return try jsonResponse(await webhooks.listSubscriptions())
+        }
+
+        // POST /admin/api/webhooks
+        if components == ["webhooks"] && method == .post {
+            let sub: WebhookSubscription = try decodeBody(request.body)
+            return try jsonResponse(await webhooks.createSubscription(sub), statusCode: 201)
+        }
+
+        // GET /admin/api/webhooks/{id}
+        if components.count == 2 && components[0] == "webhooks" && method == .get {
+            let id = try parseUUID(components[1], resource: "webhook subscription")
+            return try jsonResponse(try await webhooks.getSubscription(id: id))
+        }
+
+        // PUT /admin/api/webhooks/{id}
+        if components.count == 2 && components[0] == "webhooks" && method == .put {
+            let sub: WebhookSubscription = try decodeBody(request.body)
+            return try jsonResponse(try await webhooks.updateSubscription(sub))
+        }
+
+        // DELETE /admin/api/webhooks/{id}
+        if components.count == 2 && components[0] == "webhooks" && method == .delete {
+            let id = try parseUUID(components[1], resource: "webhook subscription")
+            try await webhooks.deleteSubscription(id: id)
+            return AdminResponse.noContent()
         }
 
         throw AdminError.notFound(resource: path)

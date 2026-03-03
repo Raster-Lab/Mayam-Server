@@ -224,7 +224,7 @@ This document defines the phased roadmap for Mayam. Each milestone is a self-con
 
 - [ ] **Prerequisite:** Contribute `ImagingStudy` and `Endpoint` FHIR R4 resource implementations to [HL7kit's FHIRkit module](https://github.com/Raster-Lab/HL7kit/tree/main/Sources/FHIRkit) before starting Mayam integration.
 - [x] Implement an **HL7 v2.x MLLP listener** using HL7kit's `HL7v2Kit` module for ADT (patient demographics), ORM (orders), and ORU (results) messages — `MLLPListener` actor with `MLLPListenerConfiguration`, message parsing via `HL7v2Message.parse()`, configurable message handler dispatch, and TLS 1.3 support.
-- [x] Implement local **FHIR R4 resource models** as placeholders until HL7kit ships native support:
+- [x] Implement local **FHIR R4 resource models** as interim placeholders (to be retired and replaced by HL7kit `FHIRkit` implementations once the prerequisite contribution above is complete):
   - `FHIRImagingStudy` — DICOM imaging study as a FHIR R4 ImagingStudy resource (status, subject, series, instances, endpoints, identifiers, modalities).
   - `FHIREndpoint` — DICOMweb endpoint as a FHIR R4 Endpoint resource (connection type, payload types, MIME types, address).
   - Supporting types: `FHIRReference`, `FHIRIdentifier`, `FHIRCoding`, `FHIRCodeableConcept`, `FHIRAnnotation`, `FHIRContactPoint`, `FHIRPeriod`.
@@ -321,7 +321,7 @@ This document defines the phased roadmap for Mayam. Each milestone is a self-con
 | 8 | User Management & LDAP | ✅ Complete | LDAP auth, RBAC, DICOM LDAP configuration |
 | 9 | Near-Line Storage & Backup | 🔲 Not Started | HSM, storage commitment, backup & recovery |
 | 10 | Worklist, MPPS & Workflow | ✅ Complete | MWL SCP, MPPS, IAN (DICOM + REST), RIS event catalog, webhook delivery |
-| 11 | HL7 & FHIR Interoperability | 🟡 In Progress | HL7 v2.x MLLP listener (via HL7kit HL7v2Kit), FHIR R4 resource models (local ImagingStudy & Endpoint placeholders), HL7 workflow integration (ORM/ORU/ADT), ACK/NACK, ServerConfiguration.HL7; pending FHIR REST endpoints, message routing, HL7kit `ImagingStudy` & `Endpoint` contributions |
+| 11 | HL7 & FHIR Interoperability | 🟡 In Progress | HL7 v2.x MLLP listener (via HL7kit HL7v2Kit), interim FHIR R4 resource models (local ImagingStudy & Endpoint — to be replaced by HL7kit), HL7 workflow integration (ORM/ORU/ADT), ACK/NACK, ServerConfiguration.HL7; pending: FHIR REST endpoints, message routing, HL7kit `ImagingStudy` & `Endpoint` contributions |
 | 12 | Security Hardening & IHE Compliance | 🔲 Not Started | ATNA, anonymisation, ACLs, Delete Protect & Privacy Flag enforcement, IHE profiles |
 | 13 | Monitoring, Metrics & Operations | 🔲 Not Started | Prometheus, Docker, systemd, health checks |
 | 14 | Performance Optimisation | 🔲 Not Started | Benchmarks, tuning, stress testing |

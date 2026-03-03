@@ -1,0 +1,501 @@
+<!-- SPDX-License-Identifier: (see LICENSE) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Mayam — a modern departmental PACS built entirely in Swift 6.2. DICOM networking, DICOMweb, HL7/FHIR, and more.">
+  <meta name="keywords" content="PACS, DICOM, DICOMweb, Swift, medical imaging, HL7, FHIR, radiology, healthcare">
+  <meta name="author" content="Raster Lab">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Mayam — Departmental PACS Built in Swift">
+  <meta property="og:description" content="A modern, clean-sheet PACS server built from the ground up in Swift 6.2 with strict concurrency.">
+  <meta property="og:type" content="website">
+  <title>Mayam — Departmental PACS Built in Swift</title>
+  <style>
+    :root {
+      --colour-primary: #0e4a6f;
+      --colour-primary-light: #1a6da0;
+      --colour-accent: #00b4d8;
+      --colour-accent-light: #90e0ef;
+      --colour-bg: #f8fafc;
+      --colour-bg-alt: #ffffff;
+      --colour-text: #1e293b;
+      --colour-text-muted: #64748b;
+      --colour-border: #e2e8f0;
+      --colour-code-bg: #1e293b;
+      --colour-code-text: #e2e8f0;
+      --max-width: 1120px;
+      --radius: 8px;
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--colour-text);
+      background: var(--colour-bg);
+    }
+
+    /* ── Navigation ────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--colour-primary);
+      border-bottom: 2px solid var(--colour-accent);
+      padding: 0 1.5rem;
+    }
+
+    nav .nav-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    nav .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+
+    nav .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    nav .nav-links a {
+      color: rgba(255, 255, 255, 0.85);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    nav .nav-links a:hover {
+      color: var(--colour-accent-light);
+    }
+
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, var(--colour-primary) 0%, var(--colour-primary-light) 100%);
+      color: #fff;
+      text-align: center;
+      padding: 5rem 1.5rem 4rem;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero .tagline {
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 1.75rem;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    /* ── Section helpers ──────────────────────────────────── */
+    section {
+      padding: 4rem 1.5rem;
+    }
+
+    section:nth-child(even) {
+      background: var(--colour-bg-alt);
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--colour-primary);
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: var(--colour-text-muted);
+      margin-bottom: 2.5rem;
+      font-size: 1rem;
+    }
+
+    /* ── Features grid ────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .feature-card {
+      background: var(--colour-bg);
+      border: 1px solid var(--colour-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .feature-card:hover {
+      box-shadow: 0 4px 16px rgba(14, 74, 111, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.4rem;
+      color: var(--colour-primary);
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--colour-text-muted);
+    }
+
+    /* ── Quick start ──────────────────────────────────────── */
+    .quick-start-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.45rem 1.1rem;
+      border: 1px solid var(--colour-border);
+      border-radius: var(--radius);
+      background: var(--colour-bg-alt);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--colour-text-muted);
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active,
+    .tab-btn:hover {
+      background: var(--colour-primary);
+      color: #fff;
+      border-color: var(--colour-primary);
+    }
+
+    .tab-panel {
+      display: none;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    pre {
+      background: var(--colour-code-bg);
+      color: var(--colour-code-text);
+      padding: 1.25rem 1.5rem;
+      border-radius: var(--radius);
+      overflow-x: auto;
+      font-size: 0.875rem;
+      line-height: 1.7;
+    }
+
+    code {
+      font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    /* ── Docs links ───────────────────────────────────────── */
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .doc-link {
+      display: block;
+      padding: 1.25rem;
+      border: 1px solid var(--colour-border);
+      border-radius: var(--radius);
+      text-decoration: none;
+      color: var(--colour-text);
+      background: var(--colour-bg);
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+
+    .doc-link:hover {
+      border-color: var(--colour-accent);
+      box-shadow: 0 2px 12px rgba(0, 180, 216, 0.12);
+    }
+
+    .doc-link strong {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: var(--colour-primary);
+    }
+
+    .doc-link span {
+      font-size: 0.85rem;
+      color: var(--colour-text-muted);
+    }
+
+    /* ── Footer ───────────────────────────────────────────── */
+    footer {
+      background: var(--colour-primary);
+      color: rgba(255, 255, 255, 0.75);
+      text-align: center;
+      padding: 2rem 1.5rem;
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--colour-accent-light);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Responsive ───────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      .hero .tagline {
+        font-size: 1rem;
+      }
+
+      nav .nav-links {
+        gap: 1rem;
+      }
+
+      nav .nav-links a {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="logo">Mayam</a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#docs">Docs</a></li>
+        <li><a href="https://github.com/Raster-Lab/Mayam">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero">
+    <h1>Mayam</h1>
+    <p class="tagline">Departmental PACS &mdash; Built in Swift</p>
+    <div class="badges">
+      <span class="badge">Swift 6.2</span>
+      <span class="badge">DICOM 2026a</span>
+      <span class="badge">DICOMweb</span>
+      <span class="badge">HL7 / FHIR R4</span>
+      <span class="badge">macOS &amp; Linux</span>
+      <span class="badge">Docker</span>
+      <span class="badge">v1.0.0</span>
+    </div>
+  </header>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="container">
+      <h2 class="section-title">Features</h2>
+      <p class="section-subtitle">Everything you need in a modern departmental PACS.</p>
+      <div class="features-grid">
+        <article class="feature-card">
+          <div class="feature-icon">🔗</div>
+          <h3>DICOM Networking</h3>
+          <p>Full C-ECHO, C-STORE, C-FIND, C-MOVE, and C-GET SCP/SCU with TLS 1.3. 22 Storage SOP Classes and 15 Transfer Syntaxes.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">🌐</div>
+          <h3>DICOMweb</h3>
+          <p>WADO-RS, QIDO-RS, STOW-RS, UPS-RS, and WADO-URI for standards-compliant RESTful access to imaging data.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">🖼️</div>
+          <h3>Image Codecs</h3>
+          <p>JPEG 2000, HTJ2K, JPEG-LS, JPEG XL, and RLE via J2KSwift, JLSwift, JXLSwift, and OpenJP3D.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">🖥️</div>
+          <h3>Web Admin Console</h3>
+          <p>Responsive web console with JWT authentication, setup wizard, and full CRUD management of nodes, storage, and settings.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">🏥</div>
+          <h3>HL7 &amp; FHIR</h3>
+          <p>HL7 v2.x MLLP integration for ADT/ORM/ORU messages and FHIR R4 REST endpoints for Patient, ImagingStudy, and more.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>Security</h3>
+          <p>IHE ATNA audit logging, DICOM anonymisation, delete protection, privacy flags, LDAP/AD, RBAC, and ACLs.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Monitoring</h3>
+          <p>Prometheus metrics, Grafana dashboards, health endpoint, graceful shutdown, and automated database migrations.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon">🐳</div>
+          <h3>Docker Support</h3>
+          <p>Multi-architecture container images (amd64, arm64), Docker Compose deployment, plus Homebrew and APT/RPM packages.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section id="quickstart">
+    <div class="container">
+      <h2 class="section-title">Quick Start</h2>
+      <p class="section-subtitle">Get Mayam running in minutes.</p>
+
+      <div class="quick-start-tabs">
+        <button class="tab-btn active" data-tab="docker" type="button">Docker</button>
+        <button class="tab-btn" data-tab="homebrew" type="button">Homebrew</button>
+        <button class="tab-btn" data-tab="source" type="button">From Source</button>
+      </div>
+
+      <div id="docker" class="tab-panel active">
+<pre><code># Pull and run the latest image
+docker pull ghcr.io/raster-lab/mayam:1.0.0
+docker run -d \
+  -p 11112:11112 \
+  -p 8080:8080 \
+  -p 8081:8081 \
+  ghcr.io/raster-lab/mayam:1.0.0</code></pre>
+      </div>
+
+      <div id="homebrew" class="tab-panel">
+<pre><code># Install via Homebrew (macOS)
+brew tap raster-lab/mayam
+brew install mayam
+
+# Start the server
+mayam-server --config /usr/local/etc/mayam/config.yaml</code></pre>
+      </div>
+
+      <div id="source" class="tab-panel">
+<pre><code># Clone and build from source
+git clone https://github.com/Raster-Lab/Mayam.git
+cd Mayam
+swift build -c release
+
+# Run the server
+.build/release/MayamServer --config Config/config.yaml</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documentation -->
+  <section id="docs">
+    <div class="container">
+      <h2 class="section-title">Documentation</h2>
+      <p class="section-subtitle">Comprehensive guides for every audience.</p>
+      <div class="docs-grid">
+        <a href="../CONFORMANCE_STATEMENT.md" class="doc-link">
+          <strong>Conformance Statement</strong>
+          <span>DICOM PS3.2-style conformance declaration covering supported SOP Classes, Transfer Syntaxes, and networking behaviour.</span>
+        </a>
+        <a href="../ADMINISTRATOR_GUIDE.md" class="doc-link">
+          <strong>Administrator Guide</strong>
+          <span>Installation, configuration, LDAP setup, backup procedures, and upgrade instructions.</span>
+        </a>
+        <a href="../DEPLOYMENT_GUIDE.md" class="doc-link">
+          <strong>Deployment Guide</strong>
+          <span>Step-by-step deployment for bare-metal macOS, Linux, Docker, and Docker Compose.</span>
+        </a>
+        <a href="../api/" class="doc-link">
+          <strong>API Reference</strong>
+          <span>OpenAPI 3.1 specifications for the Admin REST API and DICOMweb/FHIR endpoints.</span>
+        </a>
+        <a href="../../RELEASE_NOTES.md" class="doc-link">
+          <strong>Release Notes</strong>
+          <span>What&rsquo;s new in v1.0.0 — features, known issues, and installation instructions.</span>
+        </a>
+        <a href="../../COMPLIANCE.md" class="doc-link">
+          <strong>Compliance Guide</strong>
+          <span>GDPR and HIPAA compliance configuration for production environments.</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2026 <a href="https://github.com/Raster-Lab">Raster Lab</a>. All rights reserved.</p>
+    <p style="margin-top: 0.5rem;">
+      <a href="https://github.com/Raster-Lab/Mayam">GitHub</a> &middot;
+      <a href="../../LICENSE">Licence</a>
+    </p>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+        document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+        btn.classList.add('active');
+        document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

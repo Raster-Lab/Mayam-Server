@@ -1,0 +1,57 @@
+<!-- SPDX-License-Identifier: (see LICENSE) -->
+<?xml version="1.0" encoding="UTF-8"?>
+<installer-gui-script minSpecVersion="2">
+
+    <title>Mayam PACS Server</title>
+    <organization>com.raster-lab</organization>
+
+    <!-- ================================================================= -->
+    <!-- Minimum macOS version requirement                                  -->
+    <!-- ================================================================= -->
+    <allowed-os-versions>
+        <os-version min="14.0" />
+    </allowed-os-versions>
+
+    <!-- ================================================================= -->
+    <!-- Supported architectures — Apple Silicon and Intel                   -->
+    <!-- ================================================================= -->
+    <options
+        customize="never"
+        require-scripts="false"
+        hostArchitectures="arm64,x86_64" />
+
+    <!-- ================================================================= -->
+    <!-- Installer chrome                                                   -->
+    <!-- ================================================================= -->
+    <background file="background.png" alignment="bottomleft" scaling="proportional" />
+    <welcome    file="welcome.html" />
+    <license    file="licence.html" />
+    <conclusion file="conclusion.html" />
+
+    <!-- ================================================================= -->
+    <!-- Component package choices                                          -->
+    <!-- ================================================================= -->
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.raster-lab.mayam" />
+        </line>
+    </choices-outline>
+
+    <choice
+        id="default"
+        title="Mayam PACS Server" />
+
+    <choice
+        id="com.raster-lab.mayam"
+        visible="false"
+        title="Mayam Core"
+        description="Installs the Mayam PACS server binary, configuration, and launch daemon.">
+        <pkg-ref id="com.raster-lab.mayam" />
+    </choice>
+
+    <pkg-ref
+        id="com.raster-lab.mayam"
+        version="1.0.0"
+        onConclusion="none">mayam-component.pkg</pkg-ref>
+
+</installer-gui-script>

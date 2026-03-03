@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: (see LICENSE)
+#
+# postinstall — Post-installation script for the Mayam PACS server macOS
+# package.  Creates the service user/group, sets directory ownership, and
+# loads the launch daemon.
+
+set -euo pipefail
+
+readonly SERVICE_USER="mayam"
+readonly SERVICE_GROUP="mayam"
+readonly DAEMON_PLIST="/Library/LaunchDaemons/com.raster-lab.mayam.plist"
+
+# ---------------------------------------------------------------------------
+# MARK: - Helper Functions
+# ---------------------------------------------------------------------------
+
+log() {
+    echo "[Mayam postinstall] $*"
+}
+
+user_exists() {
+    dscl . -read "/Users/${1}" >/dev/null 2>&1
+}
+
+group_exists() {
+    dscl . -read "/Groups/${1}" >/dev/null 2>&1
+}
+
+next_available_id() {
+    # Find the next available UID/GID starting from 400 (daemon range).
+    local current=400
+    while dscl . -list /Users UniqueID 2>/dev/null | awk '{print $2}' | grep -qx "${current}" \
+       || dscl . -list /Groups PrimaryGroupID 2>/dev/null | awk '{print $2}' | grep -qx "${current}"; do
+        current=$((current + 1))
+    done
+    echo "${current}"
+}
+
+# ---------------------------------------------------------------------------
+# MARK: - Create Service Group
+# ---------------------------------------------------------------------------
+
+if ! group_exists "${SERVICE_GROUP}"; then
+    log "Creating group '${SERVICE_GROUP}'…"
+    group_id="$(next_available_id)"
+    dscl . -create "/Groups/${SERVICE_GROUP}"
+    dscl . -create "/Groups/${SERVICE_GROUP}" PrimaryGroupID "${group_id}"
+    dscl . -create "/Groups/${SERVICE_GROUP}" RealName "Mayam PACS Service"
+else
+    log "Group '${SERVICE_GROUP}' already exists — skipping creation."
+    group_id="$(dscl . -read "/Groups/${SERVICE_GROUP}" PrimaryGroupID | awk '{print $2}')"
+fi
+
+# ---------------------------------------------------------------------------
+# MARK: - Create Service User
+# ---------------------------------------------------------------------------
+
+if ! user_exists "${SERVICE_USER}"; then
+    log "Creating user '${SERVICE_USER}'…"
+    uid="$(next_available_id)"
+    dscl . -create "/Users/${SERVICE_USER}"
+    dscl . -create "/Users/${SERVICE_USER}" UniqueID "${uid}"
+    dscl . -create "/Users/${SERVICE_USER}" PrimaryGroupID "${group_id}"
+    dscl . -create "/Users/${SERVICE_USER}" UserShell /usr/bin/false
+    dscl . -create "/Users/${SERVICE_USER}" NFSHomeDirectory /var/empty
+    dscl . -create "/Users/${SERVICE_USER}" RealName "Mayam PACS Service"
+    # Hide the user from the login window.
+    dscl . -create "/Users/${SERVICE_USER}" IsHidden 1
+else
+    log "User '${SERVICE_USER}' already exists — skipping creation."
+fi
+
+# ---------------------------------------------------------------------------
+# MARK: - Set Directory Ownership
+# ---------------------------------------------------------------------------
+
+log "Setting ownership on data and log directories…"
+chown -R "${SERVICE_USER}:${SERVICE_GROUP}" /var/lib/mayam
+chown -R "${SERVICE_USER}:${SERVICE_GROUP}" /var/log/mayam
+chmod 0750 /var/lib/mayam
+chmod 0750 /var/log/mayam
+
+# ---------------------------------------------------------------------------
+# MARK: - Load Launch Daemon
+# ---------------------------------------------------------------------------
+
+if [[ -f "${DAEMON_PLIST}" ]]; then
+    log "Loading launch daemon…"
+    launchctl bootout system "${DAEMON_PLIST}" 2>/dev/null || true
+    launchctl bootstrap system "${DAEMON_PLIST}"
+else
+    log "Warning: Launch daemon plist not found at ${DAEMON_PLIST}."
+fi
+
+# ---------------------------------------------------------------------------
+# MARK: - Done
+# ---------------------------------------------------------------------------
+
+log "Mayam PACS server has been installed successfully."
+
+exit 0

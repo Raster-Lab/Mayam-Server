@@ -315,6 +315,48 @@ public struct ServerConfiguration: Sendable, Equatable {
         }
     }
 
+    /// HL7 v2.x and FHIR R4 integration configuration.
+    public struct HL7: Sendable, Equatable {
+        /// Whether HL7 integration is enabled.
+        public var enabled: Bool
+
+        /// TCP port for the HL7 v2.x MLLP listener.
+        public var mllpPort: Int
+
+        /// Whether TLS is enabled for MLLP connections.
+        public var mllpTLSEnabled: Bool
+
+        /// Path to the TLS certificate file (PEM format) for MLLP.
+        public var mllpTLSCertificatePath: String?
+
+        /// Path to the TLS private key file (PEM format) for MLLP.
+        public var mllpTLSKeyPath: String?
+
+        /// Whether FHIR R4 endpoints are enabled.
+        public var fhirEnabled: Bool
+
+        /// Base URL path prefix for FHIR R4 endpoints (e.g. `"/fhir"`).
+        public var fhirBasePath: String
+
+        public init(
+            enabled: Bool = false,
+            mllpPort: Int = 2575,
+            mllpTLSEnabled: Bool = false,
+            mllpTLSCertificatePath: String? = nil,
+            mllpTLSKeyPath: String? = nil,
+            fhirEnabled: Bool = false,
+            fhirBasePath: String = "/fhir"
+        ) {
+            self.enabled = enabled
+            self.mllpPort = mllpPort
+            self.mllpTLSEnabled = mllpTLSEnabled
+            self.mllpTLSCertificatePath = mllpTLSCertificatePath
+            self.mllpTLSKeyPath = mllpTLSKeyPath
+            self.fhirEnabled = fhirEnabled
+            self.fhirBasePath = fhirBasePath
+        }
+    }
+
     /// Codec configuration for image transcoding and compressed copy creation.
     public struct Codec: Sendable, Equatable {
         /// Whether on-demand transcoding is enabled (transcode only when a
@@ -368,6 +410,9 @@ public struct ServerConfiguration: Sendable, Equatable {
     /// LDAP / Active Directory integration settings.
     public var ldap: LDAP
 
+    /// HL7 v2.x and FHIR R4 integration settings.
+    public var hl7: HL7
+
     // MARK: - Initialiser
 
     public init(
@@ -379,7 +424,8 @@ public struct ServerConfiguration: Sendable, Equatable {
         backup: Backup = Backup(),
         web: Web = Web(),
         admin: Admin = Admin(),
-        ldap: LDAP = LDAP()
+        ldap: LDAP = LDAP(),
+        hl7: HL7 = HL7()
     ) {
         self.dicom = dicom
         self.storage = storage
@@ -390,6 +436,7 @@ public struct ServerConfiguration: Sendable, Equatable {
         self.web = web
         self.admin = admin
         self.ldap = ldap
+        self.hl7 = hl7
     }
 }
 
@@ -397,7 +444,7 @@ public struct ServerConfiguration: Sendable, Equatable {
 
 extension ServerConfiguration: Codable {
     enum CodingKeys: String, CodingKey {
-        case dicom, storage, log, codec, hsm, backup, web, admin, ldap
+        case dicom, storage, log, codec, hsm, backup, web, admin, ldap, hl7
     }
 
     public init(from decoder: any Decoder) throws {
@@ -411,6 +458,25 @@ extension ServerConfiguration: Codable {
         self.web = try container.decodeIfPresent(Web.self, forKey: .web) ?? Web()
         self.admin = try container.decodeIfPresent(Admin.self, forKey: .admin) ?? Admin()
         self.ldap = try container.decodeIfPresent(LDAP.self, forKey: .ldap) ?? LDAP()
+        self.hl7 = try container.decodeIfPresent(HL7.self, forKey: .hl7) ?? HL7()
+    }
+}
+
+extension ServerConfiguration.HL7: Codable {
+    enum CodingKeys: String, CodingKey {
+        case enabled, mllpPort, mllpTLSEnabled, mllpTLSCertificatePath,
+             mllpTLSKeyPath, fhirEnabled, fhirBasePath
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? false
+        self.mllpPort = try container.decodeIfPresent(Int.self, forKey: .mllpPort) ?? 2575
+        self.mllpTLSEnabled = try container.decodeIfPresent(Bool.self, forKey: .mllpTLSEnabled) ?? false
+        self.mllpTLSCertificatePath = try container.decodeIfPresent(String.self, forKey: .mllpTLSCertificatePath)
+        self.mllpTLSKeyPath = try container.decodeIfPresent(String.self, forKey: .mllpTLSKeyPath)
+        self.fhirEnabled = try container.decodeIfPresent(Bool.self, forKey: .fhirEnabled) ?? false
+        self.fhirBasePath = try container.decodeIfPresent(String.self, forKey: .fhirBasePath) ?? "/fhir"
     }
 }
 

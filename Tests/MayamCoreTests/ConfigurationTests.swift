@@ -179,6 +179,86 @@ final class ConfigurationTests: XCTestCase {
         XCTAssertEqual(decoded.web.basePath, "/dicomweb")
     }
 
+    // MARK: - HL7 Configuration Tests
+
+    func test_serverConfigurationHL7_defaults_areCorrect() {
+        let config = ServerConfiguration()
+        XCTAssertFalse(config.hl7.enabled)
+        XCTAssertEqual(config.hl7.mllpPort, 2575)
+        XCTAssertFalse(config.hl7.mllpTLSEnabled)
+        XCTAssertNil(config.hl7.mllpTLSCertificatePath)
+        XCTAssertNil(config.hl7.mllpTLSKeyPath)
+        XCTAssertFalse(config.hl7.fhirEnabled)
+        XCTAssertEqual(config.hl7.fhirBasePath, "/fhir")
+    }
+
+    func test_serverConfigurationHL7_customValues_arePreserved() {
+        let config = ServerConfiguration(
+            hl7: .init(
+                enabled: true,
+                mllpPort: 3575,
+                mllpTLSEnabled: true,
+                mllpTLSCertificatePath: "/etc/certs/mllp.pem",
+                mllpTLSKeyPath: "/etc/certs/mllp-key.pem",
+                fhirEnabled: true,
+                fhirBasePath: "/api/fhir"
+            )
+        )
+
+        XCTAssertTrue(config.hl7.enabled)
+        XCTAssertEqual(config.hl7.mllpPort, 3575)
+        XCTAssertTrue(config.hl7.mllpTLSEnabled)
+        XCTAssertEqual(config.hl7.mllpTLSCertificatePath, "/etc/certs/mllp.pem")
+        XCTAssertEqual(config.hl7.mllpTLSKeyPath, "/etc/certs/mllp-key.pem")
+        XCTAssertTrue(config.hl7.fhirEnabled)
+        XCTAssertEqual(config.hl7.fhirBasePath, "/api/fhir")
+    }
+
+    func test_serverConfigurationHL7_codable_roundTrips() throws {
+        let original = ServerConfiguration(
+            hl7: .init(enabled: true, mllpPort: 3575, fhirEnabled: true, fhirBasePath: "/api/fhir")
+        )
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(original)
+        let decoder = JSONDecoder()
+        let decoded = try decoder.decode(ServerConfiguration.self, from: data)
+        XCTAssertEqual(decoded.hl7.enabled, true)
+        XCTAssertEqual(decoded.hl7.mllpPort, 3575)
+        XCTAssertEqual(decoded.hl7.fhirEnabled, true)
+        XCTAssertEqual(decoded.hl7.fhirBasePath, "/api/fhir")
+    }
+
+    func test_configurationLoader_hl7YAML_parsesCorrectly() throws {
+        let yaml = """
+        hl7:
+          enabled: true
+          mllpPort: 2600
+          mllpTLSEnabled: true
+          fhirEnabled: true
+          fhirBasePath: "/hl7/fhir"
+        """
+
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mayam-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let configFile = tempDir.appendingPathComponent("hl7-test.yaml")
+        try yaml.write(to: configFile, atomically: true, encoding: .utf8)
+
+        let config = try ConfigurationLoader.load(from: configFile.path)
+        XCTAssertTrue(config.hl7.enabled)
+        XCTAssertEqual(config.hl7.mllpPort, 2600)
+        XCTAssertTrue(config.hl7.mllpTLSEnabled)
+        XCTAssertTrue(config.hl7.fhirEnabled)
+        XCTAssertEqual(config.hl7.fhirBasePath, "/hl7/fhir")
+        // Unspecified optional fields default to nil
+        XCTAssertNil(config.hl7.mllpTLSCertificatePath)
+        XCTAssertNil(config.hl7.mllpTLSKeyPath)
+        // Unspecified sections default correctly
+        XCTAssertEqual(config.dicom.aeTitle, "MAYAM")
+    }
+
     func test_configurationLoader_webYAML_parsesCorrectly() throws {
         let yaml = """
         web:

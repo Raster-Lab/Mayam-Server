@@ -30,6 +30,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/Raster-Lab/DICOMKit.git", branch: "main"),
+        .package(url: "https://github.com/Raster-Lab/HL7kit.git", branch: "main"),
         .package(url: "https://github.com/Raster-Lab/J2KSwift.git", branch: "main"),
         .package(url: "https://github.com/Raster-Lab/JLSwift.git", branch: "main"),
         .package(url: "https://github.com/Raster-Lab/JXLSwift.git", branch: "main"),
@@ -66,7 +67,10 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "NIOSSL", package: "swift-nio-ssl"),
-                .product(name: "Crypto", package: "swift-crypto")
+                .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "HL7v2Kit", package: "HL7kit"),
+                .product(name: "FHIRkit", package: "HL7kit"),
+                .product(name: "HL7Core", package: "HL7kit")
             ],
             resources: [
                 .copy("Database/Migrations")
@@ -108,7 +112,10 @@ let package = Package(
             name: "MayamCoreTests",
             dependencies: [
                 "MayamCore",
-                .product(name: "NIOEmbedded", package: "swift-nio")
+                .product(name: "NIOEmbedded", package: "swift-nio"),
+                .product(name: "HL7v2Kit", package: "HL7kit"),
+                .product(name: "FHIRkit", package: "HL7kit"),
+                .product(name: "HL7Core", package: "HL7kit")
             ]
         ),
         .testTarget(

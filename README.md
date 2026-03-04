@@ -452,6 +452,7 @@ Mayam/
 | [DICOMweb API Reference](docs/api/dicomweb-api.yaml) | OpenAPI 3.1 specification for DICOMweb, FHIR, health & metrics endpoints (port 8080) |
 | [GDPR & HIPAA Compliance](COMPLIANCE.md) | Compliance configuration guide for healthcare data protection regulations |
 | [Release Notes](RELEASE_NOTES.md) | Release notes for v1.0.0 |
+| [Releasing](RELEASING.md) | Release branching strategy and step-by-step release process |
 
 ---
 

@@ -1,0 +1,189 @@
+# SPDX-License-Identifier: (see LICENSE)
+#
+# Mayam — Release Workflow
+#
+# Triggered when a version tag (v*.*.*) is pushed. Builds release binaries
+# for macOS and Linux, runs the full test suite, publishes a GitHub Release
+# with binary assets, and pushes multi-architecture Docker images to GHCR.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ------------------------------------------------------------------
+  # 1. Run the full test suite before building release artefacts
+  # ------------------------------------------------------------------
+  test-linux:
+    name: Test (Linux)
+    runs-on: ubuntu-latest
+    container:
+      image: swift:6.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: swift build --build-tests
+
+      - name: Test
+        run: swift test --enable-code-coverage
+
+  test-macos:
+    name: Test (macOS)
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.3.app || sudo xcode-select -s /Applications/Xcode_16.2.app || true
+
+      - name: Build
+        run: swift build --build-tests
+
+      - name: Test
+        run: swift test --enable-code-coverage
+
+  # ------------------------------------------------------------------
+  # 2. Build release binaries
+  # ------------------------------------------------------------------
+  build-linux:
+    name: Build Linux (${{ matrix.arch }})
+    needs: test-linux
+    runs-on: ubuntu-latest
+    container:
+      image: swift:6.2
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build release binary
+        run: swift build -c release --static-swift-stdlib
+
+      - name: Package binary
+        run: |
+          mkdir -p staging
+          cp .build/release/mayam staging/
+          cp .build/release/mayam-cli staging/
+          cp README.md RELEASE_NOTES.md staging/
+          tar czf mayam-linux-${{ matrix.arch }}.tar.gz -C staging .
+
+      - name: Upload artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mayam-linux-${{ matrix.arch }}
+          path: mayam-linux-${{ matrix.arch }}.tar.gz
+
+  build-macos:
+    name: Build macOS (arm64)
+    needs: test-macos
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.3.app || sudo xcode-select -s /Applications/Xcode_16.2.app || true
+
+      - name: Build release binary
+        run: swift build -c release
+
+      - name: Package binary
+        run: |
+          mkdir -p staging
+          cp .build/release/mayam staging/
+          cp .build/release/mayam-cli staging/
+          cp README.md RELEASE_NOTES.md staging/
+          tar czf mayam-macos-arm64.tar.gz -C staging .
+
+      - name: Upload artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mayam-macos-arm64
+          path: mayam-macos-arm64.tar.gz
+
+  # ------------------------------------------------------------------
+  # 3. Build and push Docker images to GHCR
+  # ------------------------------------------------------------------
+  docker:
+    name: Docker Image
+    needs: test-linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ------------------------------------------------------------------
+  # 4. Create GitHub Release with binary assets
+  # ------------------------------------------------------------------
+  release:
+    name: GitHub Release
+    needs: [build-linux, build-macos, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artefacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artefacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: artefacts/*.tar.gz
+          generate_release_notes: false
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

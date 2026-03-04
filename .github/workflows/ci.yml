@@ -24,12 +24,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Reset SPM cache
-        run: swift package purge-cache && swift package reset
+        run: swift package purge-cache && swift package reset && swift package update
 
       - name: Build
         run: swift build --build-tests
 
       - name: Test
+        timeout-minutes: 15
         run: swift test --enable-code-coverage
 
       - name: Generate Coverage Report
@@ -51,12 +52,13 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_26.2.app || sudo xcode-select -s /Applications/Xcode_26.app || true
 
       - name: Reset SPM cache
-        run: swift package purge-cache && swift package reset
+        run: swift package purge-cache && swift package reset && swift package update
 
       - name: Build
         run: swift build --build-tests
 
       - name: Test
+        timeout-minutes: 15
         run: swift test --enable-code-coverage
 
   lint:
@@ -69,7 +71,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Reset SPM cache
-        run: swift package purge-cache && swift package reset
+        run: swift package purge-cache && swift package reset && swift package update
 
       - name: Build (strict concurrency check)
         run: swift build 2>&1 | tee build-output.txt

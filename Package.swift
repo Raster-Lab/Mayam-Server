@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 
 // SPDX-License-Identifier: (see LICENSE)
 // Mayam — Swift Package Manager Manifest

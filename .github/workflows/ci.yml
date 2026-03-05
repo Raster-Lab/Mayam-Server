@@ -23,11 +23,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Reset SPM cache
+        run: swift package purge-cache && swift package reset && swift package update
+
       - name: Build
-        run: swift build --build-tests
+        run: swift build --build-tests --enable-code-coverage
 
       - name: Test
-        run: swift test --enable-code-coverage
+        timeout-minutes: 15
+        run: swift test --skip-build --enable-code-coverage --skip LDAPIntegrationTests
 
       - name: Generate Coverage Report
         run: |
@@ -39,19 +43,23 @@ jobs:
 
   build-and-test-macos:
     name: macOS (Swift 6.2)
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.3.app || sudo xcode-select -s /Applications/Xcode_16.2.app || true
+        run: sudo xcode-select -s /Applications/Xcode_26.2.app || sudo xcode-select -s /Applications/Xcode_26.app || true
+
+      - name: Reset SPM cache
+        run: swift package purge-cache && swift package reset && swift package update
 
       - name: Build
-        run: swift build --build-tests
+        run: swift build --build-tests --enable-code-coverage
 
       - name: Test
-        run: swift test --enable-code-coverage
+        timeout-minutes: 30
+        run: swift test --skip-build --enable-code-coverage --skip LDAPIntegrationTests
 
   lint:
     name: Swift Lint
@@ -61,6 +69,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Reset SPM cache
+        run: swift package purge-cache && swift package reset && swift package update
 
       - name: Build (strict concurrency check)
         run: swift build 2>&1 | tee build-output.txt

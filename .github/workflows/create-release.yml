@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: (see LICENSE)
+#
+# Mayam — Create Release Workflow
+#
+# Manually triggered workflow that creates an annotated git tag on the
+# specified ref (typically a release branch). Pushing the tag automatically
+# triggers the Release workflow (.github/workflows/release.yml), which
+# builds binaries, publishes Docker images, and creates the GitHub Release.
+
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.0.0, 1.1.0-rc.1) — without the 'v' prefix"
+        required: true
+        type: string
+      ref:
+        description: "Branch or commit SHA to tag (e.g. release/v1.0.0). Defaults to the branch selected above."
+        required: false
+        type: string
+      dry_run:
+        description: "Dry run — validate inputs without creating the tag"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  create-tag:
+    name: Tag v${{ inputs.version }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version format
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)*)?$ ]]; then
+            echo "::error::Invalid version format '${VERSION}'. Expected semver (e.g. 1.0.0 or 1.1.0-rc.1)."
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Determine target ref
+        run: |
+          REF="${{ inputs.ref }}"
+          if [ -z "$REF" ]; then
+            REF="${{ github.ref_name }}"
+          fi
+          echo "TARGET_REF=${REF}" >> "$GITHUB_ENV"
+          echo "Targeting ref: ${REF}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_REF }}
+          fetch-depth: 0
+
+      - name: Check tag does not already exist
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}"; then
+            echo "::error::Tag v${VERSION} already exists."
+            exit 1
+          fi
+
+      - name: Create and push tag
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${VERSION}" -m "Mayam v${VERSION}"
+          git push origin "v${VERSION}"
+          echo "### ✅ Release tag created" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tag \`v${VERSION}\` has been created on \`${TARGET_REF}\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The **Release** workflow will now run automatically to build binaries, publish Docker images, and create the GitHub Release." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "### 🏃 Dry run — no tag created" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Would have created tag \`v${VERSION}\` on \`${TARGET_REF}\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Commit:** $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"

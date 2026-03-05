@@ -88,6 +88,15 @@ Verify that the following files reference the correct version:
 
 ### 4. Tag the Release
 
+Use the **Create Release** workflow from the Actions tab:
+
+1. Navigate to **Actions → Create Release**.
+2. Select the release branch (e.g. `release/v1.0.0`) from the branch dropdown.
+3. Enter the version (e.g. `1.0.0`) and confirm.
+4. Optionally enable **Dry run** to validate inputs without creating the tag.
+
+Alternatively, create the tag manually:
+
 ```bash
 git checkout release/v1.0.0
 git tag -a v1.0.0 -m "Mayam v1.0.0"
@@ -137,6 +146,7 @@ Resolve any conflicts, ensuring `main` includes all stabilisation fixes.
 |---|---|---|
 | **CI** (`.github/workflows/ci.yml`) | Push/PR to `main` or `release/**` | Build, test, and lint |
 | **Create Release Branch** (`.github/workflows/create-release-branch.yml`) | Manual (`workflow_dispatch`) | Create a `release/vX.Y.Z` branch from `main` |
+| **Create Release** (`.github/workflows/create-release.yml`) | Manual (`workflow_dispatch`) | Create an annotated version tag that triggers the Release workflow |
 | **Release** (`.github/workflows/release.yml`) | Tag push `v*.*.*` | Build release binaries, publish Docker images, create GitHub Release |
 | **CodeQL** (`.github/workflows/codeql.yml`) | Push/PR to `main` | Security scanning |
 
